@@ -1,8 +1,10 @@
 import { sql } from '@vercel/postgres';
+import { hashPassword, verifyPassword } from './auth';
 
 export interface User {
   id: number;
   email: string;
+  password_hash?: string;
   role?: 'admin' | 'user';
   created_at?: string;
 }
@@ -36,7 +38,7 @@ export interface KnowledgeFile {
 }
 
 /**
- * Initializes database tables according to Social One SQL schema.
+ * Initializes database tables according to Social One SQL schema with password authentication.
  */
 export async function initDb() {
   try {
@@ -44,6 +46,7 @@ export async function initDb() {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT,
         role VARCHAR(20) DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -90,12 +93,15 @@ export async function initDb() {
 }
 
 // In-memory mock store fallback for seamless UI development without database connection
+const DEFAULT_ADMIN_HASH = hashPassword("admin123456");
+const DEFAULT_USER_HASH = hashPassword("12345678");
+
 const inMemoryStore = {
   users: [
-    { id: 1, email: "admin@socialoneapp.com.br", role: "admin" as const, created_at: new Date().toISOString() },
-    { id: 2, email: "cliente.demo@empresa.com.br", role: "user" as const, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
-    { id: 3, email: "contato@lojadetalhes.com.br", role: "user" as const, created_at: new Date(Date.now() - 86400000 * 7).toISOString() },
-    { id: 4, email: "suporte@techcorp.com.br", role: "user" as const, created_at: new Date(Date.now() - 86400000 * 12).toISOString() }
+    { id: 1, email: "admin@socialoneapp.com.br", password_hash: DEFAULT_ADMIN_HASH, role: "admin" as const, created_at: new Date().toISOString() },
+    { id: 2, email: "cliente.demo@empresa.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
+    { id: 3, email: "contato@lojadetalhes.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 7).toISOString() },
+    { id: 4, email: "suporte@techcorp.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 12).toISOString() }
   ],
   aiKeys: [
     { id: 1, user_id: 1, provider: "openai" as const, encrypted_api_key: "sk-proj-xxxx", updated_at: new Date().toISOString() },
@@ -119,15 +125,6 @@ const inMemoryStore = {
       phone_number: "+55 11 91234-5678",
       system_prompt: "Atendente Loja Demo",
       user_email: "cliente.demo@empresa.com.br"
-    },
-    {
-      id: 3,
-      user_id: 3,
-      instance_name: "inst_lojadetalhes",
-      status: "disconnected" as const,
-      phone_number: "+55 21 98765-4321",
-      system_prompt: "Suporte Loja Detalhes",
-      user_email: "contato@lojadetalhes.com.br"
     }
   ] as WhatsAppInstance[],
   knowledgeFiles: [
@@ -136,19 +133,81 @@ const inMemoryStore = {
   ] as KnowledgeFile[]
 };
 
+export async function authenticateUser(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
+  try {
+    const res = await sql<User>`SELECT * FROM users WHERE email = ${email.toLowerCase().trim()} LIMIT 1;`;
+    if (res.rows.length === 0) {
+      return { success: false, error: 'Usuário não encontrado' };
+    }
+
+    const user = res.rows[0];
+    if (user.password_hash && !verifyPassword(password, user.password_hash)) {
+      return { success: false, error: 'Senha incorreta' };
+    }
+
+    return { success: true, user };
+  } catch {
+    const user = inMemoryStore.users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
+    if (!user) {
+      return { success: false, error: 'Usuário não encontrado' };
+    }
+
+    if (user.password_hash && !verifyPassword(password, user.password_hash)) {
+      return { success: false, error: 'Senha incorreta' };
+    }
+
+    return { success: true, user };
+  }
+}
+
+export async function registerUser(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
+  const cleanEmail = email.toLowerCase().trim();
+  const hashedPassword = hashPassword(password);
+  const role = cleanEmail.includes('admin') ? 'admin' : 'user';
+
+  try {
+    const existing = await sql`SELECT id FROM users WHERE email = ${cleanEmail};`;
+    if (existing.rows.length > 0) {
+      return { success: false, error: 'E-mail já cadastrado na plataforma' };
+    }
+
+    const res = await sql<User>`
+      INSERT INTO users (email, password_hash, role)
+      VALUES (${cleanEmail}, ${hashedPassword}, ${role})
+      RETURNING id, email, role, created_at;
+    `;
+
+    return { success: true, user: res.rows[0] };
+  } catch {
+    if (inMemoryStore.users.some(u => u.email.toLowerCase() === cleanEmail)) {
+      return { success: false, error: 'E-mail já cadastrado na plataforma' };
+    }
+
+    const newUser: User = {
+      id: inMemoryStore.users.length + 1,
+      email: cleanEmail,
+      password_hash: hashedPassword,
+      role,
+      created_at: new Date().toISOString()
+    };
+    inMemoryStore.users.push(newUser);
+    return { success: true, user: newUser };
+  }
+}
+
 export async function getOrCreateDemoUser(email: string = "admin@socialoneapp.com.br"): Promise<User> {
   try {
     const existing = await sql<User>`SELECT * FROM users WHERE email = ${email} LIMIT 1;`;
     if (existing.rows.length > 0) return existing.rows[0];
 
     const role = email.includes("admin") ? "admin" : "user";
-    const inserted = await sql<User>`INSERT INTO users (email, role) VALUES (${email}, ${role}) RETURNING *;`;
+    const inserted = await sql<User>`INSERT INTO users (email, password_hash, role) VALUES (${email}, ${DEFAULT_ADMIN_HASH}, ${role}) RETURNING *;`;
     return inserted.rows[0];
   } catch {
     let user = inMemoryStore.users.find(u => u.email === email);
     if (!user) {
       const role = email.includes("admin") ? "admin" : "user";
-      user = { id: inMemoryStore.users.length + 1, email, role, created_at: new Date().toISOString() };
+      user = { id: inMemoryStore.users.length + 1, email, password_hash: DEFAULT_ADMIN_HASH, role, created_at: new Date().toISOString() };
       inMemoryStore.users.push(user);
     }
     return user;
@@ -264,16 +323,12 @@ export async function getKnowledgeFiles(userId: number): Promise<KnowledgeFile[]
   }
 }
 
-// ==========================================
-// ADMIN DASHBOARD DATABASE FUNCTIONS
-// ==========================================
-
 export async function getAllUsers(): Promise<User[]> {
   try {
-    const res = await sql<User>`SELECT * FROM users ORDER BY created_at DESC;`;
+    const res = await sql<User>`SELECT id, email, role, created_at FROM users ORDER BY created_at DESC;`;
     return res.rows;
   } catch {
-    return inMemoryStore.users;
+    return inMemoryStore.users.map(({ password_hash, ...rest }) => rest);
   }
 }
 
