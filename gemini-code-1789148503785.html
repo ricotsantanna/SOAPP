@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social One - Mockup Paleta Oficial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandNavy: '#0B132B',      /* Bloco 1: Azul-marinho profundo */
+                        brandPurple: '#581C87',    /* Bloco 2: Roxo tecnológico */
+                        brandMagenta: '#86198F',   /* Bloco 3: Magenta / Roxo vibrante */
+                        brandLavender: '#E9D5FF',  /* Bloco 4: Lavanda suave */
+                        brandYellow: '#FACC15',    /* Bloco 5: Amarelo solar */
+                        brandBrightYellow: '#FDE047' /* Bloco 6: Amarelo claro */
+                    }
+                }
+            }
+        }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-brandNavy text-slate-100 h-screen overflow-hidden font-sans">
+
+    <div class="flex h-full w-full" x-data="{ active: 'whatsapp' }">
+
+        <!-- 1. WHATSAPP -->
+        <div @click="active = 'whatsapp'" 
+             :class="active === 'whatsapp' ? 'flex-[5] bg-brandNavy z-10 shadow-2xl border-brandMagenta/40' : 'flex-[1] bg-[#090E22] hover:bg-brandNavy cursor-pointer'"
+             class="relative transition-all duration-500 ease-in-out border-r border-slate-800 flex flex-col justify-between overflow-hidden">
+            
+            <template x-if="active === 'whatsapp'">
+                <div class="absolute top-0 left-0 right-0 h-1 bg-brandYellow"></div>
+            </template>
+
+            <div class="p-6 flex items-center justify-between border-b border-slate-800/60">
+                <div class="flex items-center space-x-3 overflow-hidden">
+                    <div :class="active === 'whatsapp' ? 'bg-brandPurple text-white shadow-lg shadow-brandPurple/30' : 'bg-[#151D3B] text-brandYellow'" class="p-2.5 rounded-xl transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    </div>
+                    <template x-if="active === 'whatsapp'">
+                        <div>
+                            <h2 class="text-lg font-bold tracking-wide text-white">WhatsApp</h2>
+                            <p class="text-xs text-brandLavender">Atendimento IA & Instâncias</p>
+                        </div>
+                    </template>
+                </div>
+                <template x-if="active !== 'whatsapp'">
+                    <span class="text-xs font-semibold text-brandLavender/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase">WhatsApp</span>
+                </template>
+            </div>
+
+            <div class="flex-1 p-6 overflow-y-auto">
+                <template x-if="active === 'whatsapp'">
+                    <div class="space-y-6">
+                        <div class="p-6 rounded-2xl bg-[#111936] border border-brandPurple/30 backdrop-blur-sm">
+                            <h3 class="text-sm font-medium text-brandYellow uppercase tracking-wider mb-2">Painel de Controle — WhatsApp</h3>
+                            <p class="text-sm text-brandLavender/80">Gerencie conexões via QR Code, visualize o status das instâncias e monitore o fluxo de atendimento automatizado.</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                                <span class="text-xs text-brandLavender/60">Status da Conexão</span>
+                                <p class="text-lg font-bold text-emerald-400 mt-1">● Conectado</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                                <span class="text-xs text-brandLavender/60">Mensagens hoje</span>
+                                <p class="text-lg font-bold text-brandYellow mt-1">1.248</p>
+                            </div>
+                        </div>
+                        <button class="px-5 py-2.5 rounded-xl bg-brandYellow text-slate-950 font-bold text-sm hover:bg-brandBrightYellow transition-colors shadow-lg shadow-brandYellow/10">Gerenciar Instância</button>
+                    </div>
+                </template>
+            </div>
+            <div class="p-4 bg-[#070B1B] border-t border-slate-800/40 text-center">
+                <span class="text-[10px] text-brandLavender/50 uppercase tracking-widest font-mono">socialoneapp.com.br</span>
+            </div>
+        </div>
+
+        <!-- 2. INSTAGRAM -->
+        <div @click="active = 'instagram'" 
+             :class="active === 'instagram' ? 'flex-[5] bg-brandNavy z-10 shadow-2xl border-brandMagenta/40' : 'flex-[1] bg-[#090E22] hover:bg-brandNavy cursor-pointer'"
+             class="relative transition-all duration-500 ease-in-out border-r border-slate-800 flex flex-col justify-between overflow-hidden">
+            
+            <template x-if="active === 'instagram'">
+                <div class="absolute top-0 left-0 right-0 h-1 bg-brandYellow"></div>
+            </template>
+
+            <div class="p-6 flex items-center justify-between border-b border-slate-800/60">
+                <div class="flex items-center space-x-3 overflow-hidden">
+                    <div :class="active === 'instagram' ? 'bg-brandMagenta text-white shadow-lg shadow-brandMagenta/30' : 'bg-[#151D3B] text-brandYellow'" class="p-2.5 rounded-xl transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 01-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8C2 4.6 4.6 2 7.8 2z"></path></svg>
+                    </div>
+                    <template x-if="active === 'instagram'">
+                        <div>
+                            <h2 class="text-lg font-bold tracking-wide text-white">Instagram</h2>
+                            <p class="text-xs text-brandLavender">Automação & Carrosséis</p>
+                        </div>
+                    </template>
+                </div>
+                <template x-if="active !== 'instagram'">
+                    <span class="text-xs font-semibold text-brandLavender/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase">Instagram</span>
+                </template>
+            </div>
+
+            <div class="flex-1 p-6 overflow-y-auto">
+                <template x-if="active === 'instagram'">
+                    <div class="space-y-6">
+                        <div class="p-6 rounded-2xl bg-[#111936] border border-brandMagenta/30 backdrop-blur-sm">
+                            <h3 class="text-sm font-medium text-brandYellow uppercase tracking-wider mb-2">Painel de Criação — Carrosséis IA</h3>
+                            <p class="text-sm text-brandLavender/80">Gere conteúdos estruturados em slides com base nos dados da empresa e aprove rascunhos antes da publicação.</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                                <span class="text-xs text-brandLavender/60">Posts Pendentes</span>
+                                <p class="text-lg font-bold text-brandYellow mt-1">3 Rascunhos</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                                <span class="text-xs text-brandLavender/60">Publicados no Mês</span>
+                                <p class="text-lg font-bold text-brandLavender mt-1">14 Posts</p>
+                            </div>
+                        </div>
+                        <button class="px-5 py-2.5 rounded-xl bg-brandYellow text-slate-950 font-bold text-sm hover:bg-brandBrightYellow transition-colors shadow-lg shadow-brandYellow/10">Criar Novo Carrossel</button>
+                    </div>
+                </template>
+            </div>
+            <div class="p-4 bg-[#070B1B] border-t border-slate-800/40 text-center">
+                <span class="text-[10px] text-brandLavender/50 uppercase tracking-widest font-mono">socialoneapp.com.br</span>
+            </div>
+        </div>
+
+        <!-- 3. BASE DE CONHECIMENTO -->
+        <div @click="active = 'knowledge'" 
+             :class="active === 'knowledge' ? 'flex-[5] bg-brandNavy z-10 shadow-2xl border-brandMagenta/40' : 'flex-[1] bg-[#090E22] hover:bg-brandNavy cursor-pointer'"
+             class="relative transition-all duration-500 ease-in-out border-r border-slate-800 flex flex-col justify-between overflow-hidden">
+            
+            <template x-if="active === 'knowledge'">
+                <div class="absolute top-0 left-0 right-0 h-1 bg-brandYellow"></div>
+            </template>
+
+            <div class="p-6 flex items-center justify-between border-b border-slate-800/60">
+                <div class="flex items-center space-x-3 overflow-hidden">
+                    <div :class="active === 'knowledge' ? 'bg-brandPurple text-white shadow-lg shadow-brandPurple/30' : 'bg-[#151D3B] text-brandYellow'" class="p-2.5 rounded-xl transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                    </div>
+                    <template x-if="active === 'knowledge'">
+                        <div>
+                            <h2 class="text-lg font-bold tracking-wide text-white">Base de Conhecimento</h2>
+                            <p class="text-xs text-brandLavender">PDFs & Google Drive (RAG)</p>
+                        </div>
+                    </template>
+                </div>
+                <template x-if="active !== 'knowledge'">
+                    <span class="text-xs font-semibold text-brandLavender/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase">Base de Dados</span>
+                </template>
+            </div>
+
+            <div class="flex-1 p-6 overflow-y-auto">
+                <template x-if="active === 'knowledge'">
+                    <div class="space-y-6">
+                        <div class="p-6 rounded-2xl bg-[#111936] border border-brandPurple/30 backdrop-blur-sm">
+                            <h3 class="text-sm font-medium text-brandYellow uppercase tracking-wider mb-2">Repositório de Conhecimento</h3>
+                            <p class="text-sm text-brandLavender/80">Faça upload de manuais em PDF ou conecte o Google Drive para alimentar as respostas da inteligência artificial.</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                                <span class="text-xs text-brandLavender/60">Arquivos Indexados</span>
+                                <p class="text-lg font-bold text-emerald-400 mt-1">8 Documentos</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                                <span class="text-xs text-brandLavender/60">Sincronização</span>
+                                <p class="text-lg font-bold text-brandYellow mt-1">Automática</p>
+                            </div>
+                        </div>
+                        <button class="px-5 py-2.5 rounded-xl bg-brandYellow text-slate-950 font-bold text-sm hover:bg-brandBrightYellow transition-colors shadow-lg shadow-brandYellow/10">Enviar Novo PDF</button>
+                    </div>
+                </template>
+            </div>
+            <div class="p-4 bg-[#070B1B] border-t border-slate-800/40 text-center">
+                <span class="text-[10px] text-brandLavender/50 uppercase tracking-widest font-mono">socialoneapp.com.br</span>
+            </div>
+        </div>
+
+        <!-- 4. CONFIGURAÇÕES -->
+        <div @click="active = 'settings'" 
+             :class="active === 'settings' ? 'flex-[5] bg-brandNavy z-10 shadow-2xl border-brandMagenta/40' : 'flex-[1] bg-[#090E22] hover:bg-brandNavy cursor-pointer'"
+             class="relative transition-all duration-500 ease-in-out flex flex-col justify-between overflow-hidden">
+            
+            <template x-if="active === 'settings'">
+                <div class="absolute top-0 left-0 right-0 h-1 bg-brandYellow"></div>
+            </template>
+
+            <div class="p-6 flex items-center justify-between border-b border-slate-800/60">
+                <div class="flex items-center space-x-3 overflow-hidden">
+                    <div :class="active === 'settings' ? 'bg-brandMagenta text-white shadow-lg shadow-brandMagenta/30' : 'bg-[#151D3B] text-brandYellow'" class="p-2.5 rounded-xl transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                    <template x-if="active === 'settings'">
+                        <div>
+                            <h2 class="text-lg font-bold tracking-wide text-white">Configurações</h2>
+                            <p class="text-xs text-brandLavender">BYOAI & System Prompt</p>
+                        </div>
+                    </template>
+                </div>
+                <template x-if="active !== 'settings'">
+                    <span class="text-xs font-semibold text-brandLavender/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase">Ajustes</span>
+                </template>
+            </div>
+
+            <div class="flex-1 p-6 overflow-y-auto">
+                <template x-if="active === 'settings'">
+                    <div class="space-y-6">
+                        <div class="p-6 rounded-2xl bg-[#111936] border border-brandMagenta/30 backdrop-blur-sm">
+                            <h3 class="text-sm font-medium text-brandYellow uppercase tracking-wider mb-2">Chaves de IA e Personas</h3>
+                            <p class="text-sm text-brandLavender/80">Configure sua chave de API (OpenAI/Gemini) e defina o comportamento e tom de voz da inteligência artificial.</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                                <span class="text-xs text-brandLavender/60">Provedor Ativo</span>
+                                <p class="text-lg font-bold text-brandLavender mt-1">OpenAI (GPT-4o)</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                                <span class="text-xs text-brandLavender/60">Status do Prompt</span>
+                                <p class="text-lg font-bold text-emerald-400 mt-1">Configurado</p>
+                            </div>
+                        </div>
+                        <button class="px-5 py-2.5 rounded-xl bg-brandYellow text-slate-950 font-bold text-sm hover:bg-brandBrightYellow transition-colors shadow-lg shadow-brandYellow/10">Salvar Configurações</button>
+                    </div>
+                </template>
+            </div>
+            <div class="p-4 bg-[#070B1B] border-t border-slate-800/40 text-center">
+                <span class="text-[10px] text-brandLavender/50 uppercase tracking-widest font-mono">socialoneapp.com.br</span>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
