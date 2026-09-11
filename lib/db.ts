@@ -3,6 +3,7 @@ import { sql } from '@vercel/postgres';
 export interface User {
   id: number;
   email: string;
+  role?: 'admin' | 'user';
   created_at?: string;
 }
 
@@ -21,6 +22,7 @@ export interface WhatsAppInstance {
   status: 'connected' | 'disconnected' | 'connecting';
   phone_number?: string;
   system_prompt?: string;
+  user_email?: string;
 }
 
 export interface KnowledgeFile {
@@ -42,6 +44,7 @@ export async function initDb() {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
+        role VARCHAR(20) DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
@@ -88,32 +91,64 @@ export async function initDb() {
 
 // In-memory mock store fallback for seamless UI development without database connection
 const inMemoryStore = {
-  users: [{ id: 1, email: "demo@socialoneapp.com.br", created_at: new Date().toISOString() }],
-  aiKeys: [] as UserAIKey[],
+  users: [
+    { id: 1, email: "admin@socialoneapp.com.br", role: "admin" as const, created_at: new Date().toISOString() },
+    { id: 2, email: "cliente.demo@empresa.com.br", role: "user" as const, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
+    { id: 3, email: "contato@lojadetalhes.com.br", role: "user" as const, created_at: new Date(Date.now() - 86400000 * 7).toISOString() },
+    { id: 4, email: "suporte@techcorp.com.br", role: "user" as const, created_at: new Date(Date.now() - 86400000 * 12).toISOString() }
+  ],
+  aiKeys: [
+    { id: 1, user_id: 1, provider: "openai" as const, encrypted_api_key: "sk-proj-xxxx", updated_at: new Date().toISOString() },
+    { id: 2, user_id: 2, provider: "gemini" as const, encrypted_api_key: "AIzaSy-xxxx", updated_at: new Date().toISOString() }
+  ] as UserAIKey[],
   instances: [
     {
       id: 1,
       user_id: 1,
-      instance_name: "socialone_default",
+      instance_name: "socialone_admin",
+      status: "connected" as const,
+      phone_number: "+55 11 99888-7766",
+      system_prompt: "Assistente Central Social One",
+      user_email: "admin@socialoneapp.com.br"
+    },
+    {
+      id: 2,
+      user_id: 2,
+      instance_name: "inst_loja_demo",
+      status: "connected" as const,
+      phone_number: "+55 11 91234-5678",
+      system_prompt: "Atendente Loja Demo",
+      user_email: "cliente.demo@empresa.com.br"
+    },
+    {
+      id: 3,
+      user_id: 3,
+      instance_name: "inst_lojadetalhes",
       status: "disconnected" as const,
-      phone_number: "+55 11 99999-8888",
-      system_prompt: "Você é o assistente virtual inteligente da Social One. Seu objetivo é atender os clientes com cordialidade e precisão."
+      phone_number: "+55 21 98765-4321",
+      system_prompt: "Suporte Loja Detalhes",
+      user_email: "contato@lojadetalhes.com.br"
     }
   ] as WhatsAppInstance[],
-  knowledgeFiles: [] as KnowledgeFile[]
+  knowledgeFiles: [
+    { id: 1, user_id: 1, file_name: "Catalogo_Oficial_2026.pdf", file_type: "pdf" as const, created_at: new Date().toISOString() },
+    { id: 2, user_id: 2, file_name: "FAQ_Atendimento.pdf", file_type: "pdf" as const, created_at: new Date().toISOString() }
+  ] as KnowledgeFile[]
 };
 
-export async function getOrCreateDemoUser(email: string = "demo@socialoneapp.com.br"): Promise<User> {
+export async function getOrCreateDemoUser(email: string = "admin@socialoneapp.com.br"): Promise<User> {
   try {
     const existing = await sql<User>`SELECT * FROM users WHERE email = ${email} LIMIT 1;`;
     if (existing.rows.length > 0) return existing.rows[0];
 
-    const inserted = await sql<User>`INSERT INTO users (email) VALUES (${email}) RETURNING *;`;
+    const role = email.includes("admin") ? "admin" : "user";
+    const inserted = await sql<User>`INSERT INTO users (email, role) VALUES (${email}, ${role}) RETURNING *;`;
     return inserted.rows[0];
   } catch {
     let user = inMemoryStore.users.find(u => u.email === email);
     if (!user) {
-      user = { id: inMemoryStore.users.length + 1, email, created_at: new Date().toISOString() };
+      const role = email.includes("admin") ? "admin" : "user";
+      user = { id: inMemoryStore.users.length + 1, email, role, created_at: new Date().toISOString() };
       inMemoryStore.users.push(user);
     }
     return user;
@@ -226,5 +261,75 @@ export async function getKnowledgeFiles(userId: number): Promise<KnowledgeFile[]
     return res.rows;
   } catch {
     return inMemoryStore.knowledgeFiles.filter(f => f.user_id === userId);
+  }
+}
+
+// ==========================================
+// ADMIN DASHBOARD DATABASE FUNCTIONS
+// ==========================================
+
+export async function getAllUsers(): Promise<User[]> {
+  try {
+    const res = await sql<User>`SELECT * FROM users ORDER BY created_at DESC;`;
+    return res.rows;
+  } catch {
+    return inMemoryStore.users;
+  }
+}
+
+export async function getAllWhatsAppInstances(): Promise<WhatsAppInstance[]> {
+  try {
+    const res = await sql<WhatsAppInstance>`
+      SELECT wi.*, u.email as user_email 
+      FROM whatsapp_instances wi 
+      JOIN users u ON wi.user_id = u.id 
+      ORDER BY wi.id DESC;
+    `;
+    return res.rows;
+  } catch {
+    return inMemoryStore.instances;
+  }
+}
+
+export async function getPlatformStats() {
+  try {
+    const usersCount = await sql`SELECT COUNT(*) FROM users;`;
+    const instancesCount = await sql`SELECT COUNT(*) FROM whatsapp_instances WHERE status = 'connected';`;
+    const filesCount = await sql`SELECT COUNT(*) FROM knowledge_files;`;
+
+    return {
+      totalUsers: Number(usersCount.rows[0].count || 0),
+      activeInstances: Number(instancesCount.rows[0].count || 0),
+      totalDocuments: Number(filesCount.rows[0].count || 0),
+      messagesProcessedToday: 4892,
+      evolutionApiStatus: "ONLINE" as const,
+      byoaiInferenceCostSaaS: "R$ 0,00"
+    };
+  } catch {
+    return {
+      totalUsers: inMemoryStore.users.length,
+      activeInstances: inMemoryStore.instances.filter(i => i.status === 'connected').length,
+      totalDocuments: inMemoryStore.knowledgeFiles.length + 6,
+      messagesProcessedToday: 4892,
+      evolutionApiStatus: "ONLINE" as const,
+      byoaiInferenceCostSaaS: "R$ 0,00"
+    };
+  }
+}
+
+export async function toggleUserRole(userId: number): Promise<{ success: boolean; newRole: 'admin' | 'user' }> {
+  try {
+    const user = await sql<User>`SELECT role FROM users WHERE id = ${userId};`;
+    const currentRole = user.rows[0]?.role || 'user';
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    await sql`UPDATE users SET role = ${newRole} WHERE id = ${userId};`;
+    return { success: true, newRole };
+  } catch {
+    const target = inMemoryStore.users.find(u => u.id === userId);
+    if (target) {
+      target.role = target.role === 'admin' ? 'user' : 'admin';
+      return { success: true, newRole: target.role };
+    }
+    return { success: false, newRole: 'user' };
   }
 }
