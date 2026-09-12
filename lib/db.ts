@@ -61,6 +61,18 @@ export interface ChatMessage {
   created_at?: string;
 }
 
+export interface Appointment {
+  id?: number;
+  user_id: number;
+  customer_name: string;
+  customer_phone: string;
+  service_name: string;
+  appointment_time: string;
+  status: 'scheduled' | 'confirmed' | 'rescheduled' | 'cancelled';
+  google_event_id?: string;
+  created_at?: string;
+}
+
 /**
  * Initializes database tables according to Social One SQL schema with password authentication.
  */
@@ -142,6 +154,20 @@ export async function initDb() {
       );
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS appointments (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_phone VARCHAR(50) NOT NULL,
+        service_name VARCHAR(255) NOT NULL,
+        appointment_time TIMESTAMP NOT NULL,
+        status VARCHAR(50) DEFAULT 'scheduled',
+        google_event_id TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     return { success: true, message: "Database schema validated successfully." };
   } catch (error) {
     console.warn("DB Initialization note (Database environment variables may be missing during build/demo):", error);
@@ -189,7 +215,31 @@ const inMemoryStore = {
     { id: 1, user_id: 1, title: '5 Dicas para Automatizar seu Atendimento', slides_count: 5, date: 'Hoje' },
     { id: 2, user_id: 1, title: 'Por que o modelo BYOAI economiza até 90%?', slides_count: 4, date: 'Ontem' }
   ] as Carousel[],
-  chatMessages: [] as ChatMessage[]
+  chatMessages: [] as ChatMessage[],
+  appointments: [
+    {
+      id: 1,
+      user_id: 1,
+      customer_name: 'Ana Paula Souza',
+      customer_phone: '51998877665',
+      service_name: 'Consulta Estética Avançada',
+      appointment_time: new Date(Date.now() + 18 * 3600 * 1000).toISOString(),
+      status: 'scheduled',
+      google_event_id: 'evt_demo_101',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 2,
+      user_id: 1,
+      customer_name: 'Carlos Eduardo',
+      customer_phone: '11987654321',
+      service_name: 'Manutenção de Equipamentos',
+      appointment_time: new Date(Date.now() + 42 * 3600 * 1000).toISOString(),
+      status: 'scheduled',
+      google_event_id: 'evt_demo_102',
+      created_at: new Date().toISOString()
+    }
+  ] as Appointment[]
 };
 
 export async function authenticateUser(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
@@ -663,4 +713,65 @@ export async function isBotPaused(userId: number, instanceName: string): Promise
     return { isPaused, pausedUntil: inst.bot_paused_until };
   }
 }
+
+export async function getAppointments(userId: number): Promise<Appointment[]> {
+  try {
+    const res = await sql<Appointment>`
+      SELECT * FROM appointments WHERE user_id = ${userId} ORDER BY appointment_time ASC;
+    `;
+    return res.rows;
+  } catch {
+    return inMemoryStore.appointments.filter(a => a.user_id === userId);
+  }
+}
+
+export async function createAppointment(appt: Appointment): Promise<Appointment> {
+  try {
+    const res = await sql<Appointment>`
+      INSERT INTO appointments (user_id, customer_name, customer_phone, service_name, appointment_time, status, google_event_id)
+      VALUES (${appt.user_id}, ${appt.customer_name}, ${appt.customer_phone}, ${appt.service_name}, ${appt.appointment_time}, ${appt.status || 'scheduled'}, ${appt.google_event_id || null})
+      RETURNING *;
+    `;
+    return res.rows[0];
+  } catch {
+    const newAppt: Appointment = {
+      id: Date.now(),
+      ...appt,
+      created_at: new Date().toISOString(),
+    };
+    inMemoryStore.appointments.push(newAppt);
+    return newAppt;
+  }
+}
+
+export async function updateAppointmentStatus(id: number, status: 'scheduled' | 'confirmed' | 'rescheduled' | 'cancelled') {
+  try {
+    await sql`UPDATE appointments SET status = ${status} WHERE id = ${id};`;
+    return { success: true };
+  } catch {
+    const appt = inMemoryStore.appointments.find(a => a.id === id);
+    if (appt) appt.status = status;
+    return { success: true };
+  }
+}
+
+export async function getUpcomingAppointments24h(): Promise<Appointment[]> {
+  try {
+    const res = await sql<Appointment>`
+      SELECT * FROM appointments 
+      WHERE appointment_time >= NOW() 
+        AND appointment_time <= NOW() + INTERVAL '24 hours'
+        AND status = 'scheduled';
+    `;
+    return res.rows;
+  } catch {
+    const now = new Date();
+    const next24 = new Date(now.getTime() + 24 * 3600 * 1000);
+    return inMemoryStore.appointments.filter(a => {
+      const t = new Date(a.appointment_time);
+      return t >= now && t <= next24 && a.status === 'scheduled';
+    });
+  }
+}
+
 

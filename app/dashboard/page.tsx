@@ -63,6 +63,16 @@ export default function DashboardMasterWorkspace() {
   const [botPaused, setBotPaused] = useState(false);
   const [botPausedUntil, setBotPausedUntil] = useState<string | null>(null);
   const [pausingBot, setPausingBot] = useState(false);
+  // --- APPOINTMENTS STATE ---
+  const [appointmentsList, setAppointmentsList] = useState<any[]>([]);
+  const [newApptModal, setNewApptModal] = useState(false);
+  const [apptCustomerName, setApptCustomerName] = useState('');
+  const [apptCustomerPhone, setApptCustomerPhone] = useState('');
+  const [apptServiceName, setApptServiceName] = useState('');
+  const [apptTime, setApptTime] = useState('');
+  const [creatingAppt, setCreatingAppt] = useState(false);
+  const [cronTriggerMsg, setCronTriggerMsg] = useState<string | null>(null);
+  const [triggeringCron, setTriggeringCron] = useState(false);
 
   const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([
     { sender: 'ai', text: 'Olá! Sou o atendente virtual do WhatsApp da Social One. Como posso te ajudar?' }
@@ -252,6 +262,15 @@ export default function DashboardMasterWorkspace() {
           setBotPausedUntil(pData.pausedUntil);
         }
 
+        // Load Appointments
+        const apptRes = await fetch('/api/appointments?userId=1');
+        if (apptRes.ok) {
+          const aData = await apptRes.json();
+          if (aData.appointments && Array.isArray(aData.appointments)) {
+            setAppointmentsList(aData.appointments);
+          }
+        }
+
         // Load live chat messages
         const chatRes = await fetch('/api/ai/chat?userId=1');
         if (chatRes.ok) {
@@ -363,6 +382,53 @@ export default function DashboardMasterWorkspace() {
       setQrError('Erro de comunicação com a Evolution API.');
     } finally {
       setQrLoading(false);
+    }
+  };
+
+  const handleCreateAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!apptCustomerName || !apptCustomerPhone || !apptServiceName || !apptTime) return;
+    setCreatingAppt(true);
+    try {
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: 1,
+          customerName: apptCustomerName,
+          customerPhone: apptCustomerPhone,
+          serviceName: apptServiceName,
+          appointmentTime: apptTime,
+        }),
+      });
+      const data = await res.json();
+      if (data.appointment) {
+        setAppointmentsList(prev => [...prev, data.appointment]);
+        setNewApptModal(false);
+        setApptCustomerName('');
+        setApptCustomerPhone('');
+        setApptServiceName('');
+        setApptTime('');
+      }
+    } catch (err) {
+      console.error('Error creating appointment:', err);
+    } finally {
+      setCreatingAppt(false);
+    }
+  };
+
+  const handleRun24hCron = async () => {
+    setTriggeringCron(true);
+    setCronTriggerMsg(null);
+    try {
+      const res = await fetch('/api/cron/confirmations');
+      const data = await res.json();
+      setCronTriggerMsg(data.message || 'Cron de confirmação executado!');
+    } catch (err: any) {
+      setCronTriggerMsg('Erro ao executar cron de confirmação.');
+    } finally {
+      setTriggeringCron(false);
+      setTimeout(() => setCronTriggerMsg(null), 8000);
     }
   };
 
@@ -856,74 +922,81 @@ export default function DashboardMasterWorkspace() {
               {/* SERVICE VIEW: Agenda Inteligente */}
               {businessModel === 'service' && (
                 <>
-                  <div className="p-6 rounded-2xl bg-[#111936] border border-[#581C87]/30 backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="p-6 rounded-2xl bg-[#111936] border border-[#581C87]/30 backdrop-blur-sm space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="text-sm font-bold text-[#FACC15] uppercase tracking-wider">
                         Agenda Inteligente — Google Calendar (SSOT)
                       </h3>
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        SSOT CONECTADO
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          SSOT CONECTADO
+                        </span>
+                        <button
+                          onClick={handleRun24hCron}
+                          disabled={triggeringCron}
+                          className="px-3 py-1 rounded-lg bg-[#581C87] hover:bg-[#6b21a8] text-[#FACC15] font-bold text-xs flex items-center space-x-1 transition-colors"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{triggeringCron ? 'Disparando...' : 'Testar Confirmação 24h (Cron)'}</span>
+                        </button>
+                      </div>
                     </div>
                     <p className="text-sm text-[#E9D5FF]/80 leading-relaxed">
-                      A IA consulta a disponibilidade em tempo real e realiza os agendamentos salvando o número do WhatsApp do cliente na descrição do evento.
+                      A IA consulta a disponibilidade em tempo real e realiza os agendamentos salvando o número do WhatsApp do cliente no evento.
                     </p>
+
+                    {cronTriggerMsg && (
+                      <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-xs text-emerald-300 font-semibold">
+                        ✅ {cronTriggerMsg}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Compromissos de Hoje</h4>
-                      <button className="text-xs text-[#FACC15] font-semibold hover:underline flex items-center space-x-1">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Agendamentos & Google Calendar</h4>
+                      <button 
+                        onClick={() => setNewApptModal(true)}
+                        className="text-xs text-[#FACC15] font-semibold hover:underline flex items-center space-x-1"
+                      >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Novo Agendamento</span>
                       </button>
                     </div>
 
                     <div className="space-y-2">
-                      <div className="p-4 rounded-xl bg-[#111936] border border-slate-800 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="px-3 py-1.5 rounded-lg bg-[#581C87] text-[#FACC15] font-bold text-xs font-mono">
-                            09:00 - 09:45
-                          </div>
-                          <div>
-                            <h5 className="font-bold text-sm text-white">Maria Silva • Consulta Presencial</h5>
-                            <p className="text-xs text-[#E9D5FF]/60 font-mono">WhatsApp: (11) 98888-7777</p>
-                          </div>
+                      {appointmentsList.length === 0 ? (
+                        <div className="p-6 text-center text-slate-400 text-xs bg-[#111936] rounded-xl border border-slate-800">
+                          Nenhum agendamento futuro encontrado.
                         </div>
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                          CONFIRMADO 24H
-                        </span>
-                      </div>
-
-                      <div className="p-4 rounded-xl bg-[#111936] border border-slate-800 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="px-3 py-1.5 rounded-lg bg-[#581C87] text-[#FACC15] font-bold text-xs font-mono">
-                            11:30 - 12:15
-                          </div>
-                          <div>
-                            <h5 className="font-bold text-sm text-white">Carlos Eduardo • Avaliação Técnica</h5>
-                            <p className="text-xs text-[#E9D5FF]/60 font-mono">WhatsApp: (11) 97777-6666</p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                          LEMBRETE ENVIADO
-                        </span>
-                      </div>
-
-                      <div className="p-4 rounded-xl bg-[#090E22] border border-slate-800/60 flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 font-bold text-xs font-mono">
-                            15:00 - 15:45
-                          </div>
-                          <div>
-                            <h5 className="font-bold text-sm text-slate-300">Horário Livre em Aberto</h5>
-                            <p className="text-xs text-slate-500">IA monitorando solicitações no WhatsApp</p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-purple-500/10 text-[#E9D5FF] border border-purple-500/20">
-                          DISPONÍVEL
-                        </span>
-                      </div>
+                      ) : (
+                        appointmentsList.map((appt: any) => {
+                          const dateObj = new Date(appt.appointment_time);
+                          const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                          const dateStr = dateObj.toLocaleDateString('pt-BR');
+                          return (
+                            <div key={appt.id || appt.customer_phone} className="p-4 rounded-xl bg-[#111936] border border-slate-800 flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className="px-3 py-1.5 rounded-lg bg-[#581C87] text-[#FACC15] font-bold text-xs font-mono text-center">
+                                  <div>{timeStr}</div>
+                                  <div className="text-[9px] text-[#E9D5FF]">{dateStr}</div>
+                                </div>
+                                <div>
+                                  <h5 className="font-bold text-sm text-white">{appt.customer_name} • {appt.service_name}</h5>
+                                  <p className="text-xs text-[#E9D5FF]/60 font-mono">WhatsApp: {appt.customer_phone}</p>
+                                </div>
+                              </div>
+                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                                appt.status === 'confirmed' 
+                                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                  : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                              }`}>
+                                {appt.status === 'confirmed' ? 'CONFIRMADO 24H' : 'AGENDADO / SSOT'}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 </>
@@ -1713,6 +1786,70 @@ export default function DashboardMasterWorkspace() {
               >
                 <Sparkles className="w-4 h-4 text-slate-950" />
                 <span>{carouselLoading ? 'Gerando Carrossel...' : 'Gerar Carrossel com IA'}</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: NEW APPOINTMENT */}
+      {newApptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="bg-[#111936] border border-[#581C87]/40 p-6 rounded-3xl max-w-md w-full space-y-4 relative">
+            <button onClick={() => setNewApptModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
+            <h3 className="font-bold text-white text-base">Novo Agendamento — Google Calendar SSOT</h3>
+            <p className="text-xs text-slate-400">Insira os dados do cliente para salvar na agenda e vincular ao atendimento de IA</p>
+            <form onSubmit={handleCreateAppointment} className="space-y-3">
+              <div>
+                <label className="text-[11px] font-medium text-slate-300 block mb-1">Nome do Cliente</label>
+                <input 
+                  type="text"
+                  required
+                  value={apptCustomerName}
+                  onChange={e => setApptCustomerName(e.target.value)}
+                  placeholder="Ex: Maria Silva"
+                  className="w-full px-3 py-2 rounded-xl bg-[#090E22] border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FACC15]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-slate-300 block mb-1">WhatsApp do Cliente</label>
+                <input 
+                  type="text"
+                  required
+                  value={apptCustomerPhone}
+                  onChange={e => setApptCustomerPhone(e.target.value)}
+                  placeholder="Ex: 51998877665"
+                  className="w-full px-3 py-2 rounded-xl bg-[#090E22] border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FACC15]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-slate-300 block mb-1">Serviço / Procedimento</label>
+                <input 
+                  type="text"
+                  required
+                  value={apptServiceName}
+                  onChange={e => setApptServiceName(e.target.value)}
+                  placeholder="Ex: Consulta Presencial Estética"
+                  className="w-full px-3 py-2 rounded-xl bg-[#090E22] border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FACC15]"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-slate-300 block mb-1">Data e Hora</label>
+                <input 
+                  type="datetime-local"
+                  required
+                  value={apptTime}
+                  onChange={e => setApptTime(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#090E22] border border-slate-800 text-xs text-white focus:outline-none focus:border-[#FACC15]"
+                />
+              </div>
+              <button 
+                type="submit"
+                disabled={creatingAppt}
+                className="w-full py-3 mt-2 bg-[#FACC15] text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center space-x-2 hover:bg-[#FDE047]"
+              >
+                <Calendar className="w-4 h-4 text-slate-950" />
+                <span>{creatingAppt ? 'Agendando no Google Calendar...' : 'Confirmar & Sincronizar SSOT'}</span>
               </button>
             </form>
           </div>
