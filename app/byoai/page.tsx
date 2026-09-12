@@ -15,6 +15,8 @@ import {
   Zap
 } from 'lucide-react';
 
+import Header from '../components/Header';
+
 export default function ByoaiPage() {
   return (
     <div className="min-h-screen bg-brand-navy text-slate-100 flex flex-col relative overflow-hidden font-sans">
@@ -22,26 +24,7 @@ export default function ByoaiPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-radial from-brand-violet/25 via-brand-magenta/10 to-transparent blur-3xl pointer-events-none" />
 
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/80 border-b border-brand-violet/20 px-4 sm:px-8 py-3.5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-violet via-brand-magenta to-brand-amber flex items-center justify-center shadow-lg shadow-brand-violet/30 group-hover:scale-105 transition-transform duration-300">
-              <Bot className="w-6 h-6 text-white" />
-            </div>
-            <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-brand-lavender">
-              Social One
-            </span>
-          </Link>
-
-          <Link
-            href="/"
-            className="flex items-center space-x-2 text-xs font-semibold text-slate-300 hover:text-white px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all"
-          >
-            <ArrowLeft className="w-4 h-4 text-brand-amber" />
-            <span>Voltar ao Início</span>
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <main className="flex-1 max-w-5xl mx-auto px-6 py-16 w-full relative z-10">

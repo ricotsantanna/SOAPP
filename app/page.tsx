@@ -22,13 +22,13 @@ import {
 } from 'lucide-react';
 
 import CheckoutMercadoPagoModal from './dashboard/CheckoutMercadoPagoModal';
+import Header from './components/Header';
 
 export default function LandingPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [selectedCheckoutPlan, setSelectedCheckoutPlan] = useState<{ name: string; price: string } | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,7 +58,6 @@ export default function LandingPage() {
         return;
       }
 
-      // Redirect based on user role
       if (data.user?.role === 'admin') {
         window.location.href = '/admin';
       } else {
@@ -86,152 +85,8 @@ export default function LandingPage() {
       <div className="absolute top-1/3 -right-40 w-[500px] h-[500px] bg-brand-magenta/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 -left-40 w-[600px] h-[600px] bg-brand-violet/15 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/80 border-b border-brand-violet/20 px-4 sm:px-8 py-3.5 transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-violet via-brand-magenta to-brand-amber flex items-center justify-center shadow-lg shadow-brand-violet/30 group-hover:scale-105 transition-transform duration-300">
-              <Bot className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex items-center">
-              <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-brand-lavender">
-                Social One
-              </span>
-              <span className="hidden sm:inline-flex text-[10px] uppercase font-extrabold tracking-widest text-brand-amber ml-2.5 px-2.5 py-0.5 rounded-full bg-brand-amber/10 border border-brand-amber/30 items-center gap-1 shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-amber animate-ping" />
-                SaaS Enterprise
-              </span>
-            </div>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1.5 bg-slate-900/60 p-1.5 rounded-2xl border border-white/5 backdrop-blur-md">
-            <Link
-              href="/planos"
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-brand-amber via-yellow-400 to-amber-500 hover:brightness-110 transition-all flex items-center space-x-1.5 shadow-md shadow-brand-amber/20"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-slate-950 fill-slate-950" />
-              <span>Planos SaaS ✨</span>
-            </Link>
-            <Link
-              href="/recursos"
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all"
-            >
-              Recursos
-            </Link>
-            <Link
-              href="/byoai"
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all"
-            >
-              Modelo BYOAI
-            </Link>
-            <Link
-              href="/rag"
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all"
-            >
-              Base de Conhecimento
-            </Link>
-            <Link
-              href="/whatsapp"
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all"
-            >
-              WhatsApp API
-            </Link>
-          </nav>
-
-          {/* Header Action Buttons */}
-          <div className="hidden sm:flex items-center space-x-3">
-            <button
-              onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
-              className="text-xs font-semibold text-slate-300 hover:text-white px-4 py-2.5 rounded-xl hover:bg-white/5 transition-colors"
-            >
-              Entrar
-            </button>
-            <button
-              onClick={() => { setAuthMode('register'); setShowAuthModal(true); }}
-              className="bg-gradient-to-r from-brand-violet to-brand-magenta text-white font-bold px-5 py-2.5 rounded-xl hover:opacity-90 transition-all transform hover:scale-105 shadow-lg shadow-brand-violet/25 flex items-center space-x-2 text-xs"
-            >
-              <span>Testar Agora</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Mobile Hamburger Button */}
-          <div className="flex lg:hidden items-center space-x-2">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white focus:outline-none"
-              aria-label="Alternar Menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6 text-brand-amber" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden mt-3 p-4 bg-slate-900/95 border border-brand-violet/30 rounded-2xl backdrop-blur-2xl shadow-2xl flex flex-col space-y-3 animate-fadeIn">
-            <Link
-              href="/planos"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-3 rounded-xl text-sm font-extrabold text-slate-950 bg-gradient-to-r from-brand-amber to-yellow-400 flex items-center justify-between shadow-md"
-            >
-              <span className="flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 text-slate-950" />
-                <span>Planos SaaS</span>
-              </span>
-              <span className="text-[10px] px-2 py-0.5 bg-slate-950 text-brand-amber rounded-full font-bold uppercase">
-                Ver Preços
-              </span>
-            </Link>
-            <Link
-              href="/recursos"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/5 transition-colors"
-            >
-              Recursos
-            </Link>
-            <Link
-              href="/byoai"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/5 transition-colors"
-            >
-              Modelo BYOAI
-            </Link>
-            <Link
-              href="/rag"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/5 transition-colors"
-            >
-              Base de Conhecimento
-            </Link>
-            <Link
-              href="/whatsapp"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/5 transition-colors"
-            >
-              WhatsApp API
-            </Link>
-
-            <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
-              <button
-                onClick={() => { setMobileMenuOpen(false); setAuthMode('login'); setShowAuthModal(true); }}
-                className="w-full py-2.5 rounded-xl bg-slate-800 text-slate-200 font-semibold text-xs text-center"
-              >
-                Entrar
-              </button>
-              <button
-                onClick={() => { setMobileMenuOpen(false); setAuthMode('register'); setShowAuthModal(true); }}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-violet to-brand-magenta text-white font-bold text-xs flex items-center justify-center space-x-2"
-              >
-                <span>Testar Agora Grátis</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-      </header>
+      {/* Reusable Header with Official Logo */}
+      <Header onOpenAuth={(mode) => { setAuthMode(mode); setShowAuthModal(true); }} />
 
       {/* Hero Section */}
       <section id="recursos" className="relative pt-20 pb-24 px-6 max-w-7xl mx-auto text-center flex flex-col items-center justify-center">
