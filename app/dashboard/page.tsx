@@ -664,15 +664,15 @@ export default function DashboardMasterWorkspace() {
   };
 
   return (
-    <div className="flex h-full w-full bg-[#0B132B] text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-full w-full bg-[#0B132B] text-slate-100 overflow-x-auto md:overflow-hidden font-sans">
       
       {/* 1. WHATSAPP COLUMN */}
       <div 
         onClick={() => setActive('whatsapp')} 
         className={`relative transition-all duration-500 ease-in-out border-r border-slate-800/80 flex flex-col justify-between overflow-hidden ${
           active === 'whatsapp' 
-            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[320px]' 
-            : 'w-14 min-w-[56px] max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-6'
+            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[280px] md:min-w-[320px]' 
+            : 'w-10 min-w-[40px] max-w-[40px] md:w-14 md:min-w-[56px] md:max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-4 md:py-6'
         }`}
       >
         {active === 'whatsapp' && (
@@ -868,8 +868,8 @@ export default function DashboardMasterWorkspace() {
         onClick={() => setActive('agenda')} 
         className={`relative transition-all duration-500 ease-in-out border-r border-slate-800/80 flex flex-col justify-between overflow-hidden ${
           active === 'agenda' 
-            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[320px]' 
-            : 'w-14 min-w-[56px] max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-6'
+            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[280px] md:min-w-[320px]' 
+            : 'w-10 min-w-[40px] max-w-[40px] md:w-14 md:min-w-[56px] md:max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-4 md:py-6'
         }`}
       >
         {active === 'agenda' && (
@@ -1073,10 +1073,10 @@ export default function DashboardMasterWorkspace() {
         onClick={() => setActive('instagram')} 
         className={`relative transition-all duration-500 ease-in-out border-r border-slate-800/80 flex flex-col justify-between overflow-hidden ${
           active === 'instagram' 
-            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[320px]' 
+            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[280px] md:min-w-[320px]' 
             : userPlan === 'start'
-              ? 'w-14 min-w-[56px] max-w-[56px] bg-[#060914] opacity-70 hover:opacity-100 cursor-pointer items-center py-6 border-r border-slate-800/60'
-              : 'w-14 min-w-[56px] max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-6'
+              ? 'w-10 min-w-[40px] max-w-[40px] md:w-14 md:min-w-[56px] md:max-w-[56px] bg-[#060914] opacity-70 hover:opacity-100 cursor-pointer items-center py-4 md:py-6 border-r border-slate-800/60'
+              : 'w-10 min-w-[40px] max-w-[40px] md:w-14 md:min-w-[56px] md:max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-4 md:py-6'
         }`}
       >
         {active === 'instagram' && (
@@ -1220,8 +1220,8 @@ export default function DashboardMasterWorkspace() {
         onClick={() => setActive('knowledge')} 
         className={`relative transition-all duration-500 ease-in-out border-r border-slate-800/80 flex flex-col justify-between overflow-hidden ${
           active === 'knowledge' 
-            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[320px]' 
-            : 'w-14 min-w-[56px] max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-6'
+            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[280px] md:min-w-[320px]' 
+            : 'w-10 min-w-[40px] max-w-[40px] md:w-14 md:min-w-[56px] md:max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-4 md:py-6'
         }`}
       >
         {active === 'knowledge' && (
@@ -1328,13 +1328,13 @@ export default function DashboardMasterWorkspace() {
       </div>
 
 
-      {/* 4. CONFIGURAÇÕES COLUMN */}
+      {/* 5. CONFIGURAÇÕES COLUMN */}
       <div 
         onClick={() => setActive('settings')} 
         className={`relative transition-all duration-500 ease-in-out flex flex-col justify-between overflow-hidden ${
           active === 'settings' 
-            ? 'flex-[5] bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40' 
-            : 'flex-[1] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer'
+            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[280px] md:min-w-[320px]' 
+            : 'w-10 min-w-[40px] max-w-[40px] md:w-14 md:min-w-[56px] md:max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-4 md:py-6'
         }`}
       >
         {active === 'settings' && (
@@ -1342,28 +1342,26 @@ export default function DashboardMasterWorkspace() {
         )}
 
         {/* Column Header */}
-        <div className="p-6 flex items-center justify-between border-b border-slate-800/60 shrink-0">
-          <div className="flex items-center space-x-3 overflow-hidden">
-            <div className={`p-2.5 rounded-xl transition-colors ${
-              active === 'settings' 
-                ? 'bg-[#86198F] text-white shadow-lg shadow-magenta-950/50' 
-                : 'bg-[#151D3B] text-[#FACC15]'
-            }`}>
-              <SettingsIcon className="w-5 h-5" />
-            </div>
-            {active === 'settings' && (
+        {active === 'settings' ? (
+          <div className="p-6 flex items-center justify-between border-b border-slate-800/60 shrink-0">
+            <div className="flex items-center space-x-3 overflow-hidden">
+              <div className="p-2.5 rounded-xl bg-[#86198F] text-white shadow-lg shadow-magenta-950/50">
+                <SettingsIcon className="w-5 h-5" />
+              </div>
               <div>
                 <h2 className="text-lg font-bold tracking-wide text-white">Configurações</h2>
                 <p className="text-xs text-[#E9D5FF]">BYOAI & System Prompt</p>
               </div>
-            )}
+            </div>
           </div>
-          {active !== 'settings' && (
-            <span className="text-xs font-semibold text-[#E9D5FF]/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase">
-              Ajustes
+        ) : (
+          <div className="flex flex-col items-center space-y-4 my-auto">
+            <SettingsIcon className="w-5 h-5 text-[#FACC15]" />
+            <span className="text-xs font-semibold text-[#E9D5FF]/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase truncate max-h-[200px]">
+              CONFIGURAÇÕES
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Column Inner Content */}
         <div className="flex-1 p-6 overflow-y-auto">
