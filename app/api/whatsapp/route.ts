@@ -39,32 +39,72 @@ export async function GET(req: Request) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://socialoneapp.com.br';
       const webhookUrl = `${appUrl}/api/whatsapp`;
 
-      const res = await fetch(`${baseUrl}/webhook/set/${instanceName}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': apiKey,
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
+      const headers = {
+        'Content-Type': 'application/json',
+        'apikey': apiKey,
+        'Authorization': `Bearer ${apiKey}`,
+      };
+
+      // Evolution API v2 uses camelCase — try POST first, then PUT as fallback
+      const payloadV2 = {
+        url: webhookUrl,
+        webhookByEvents: false,
+        webhookBase64: false,
+        events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE'],
+      };
+
+      // Also try wrapped format used by some Evolution API versions
+      const payloadWrapped = {
+        webhook: {
+          enabled: true,
           url: webhookUrl,
-          webhook_by_events: false,
-          webhook_base64: false,
+          webhookByEvents: false,
+          webhookBase64: false,
           events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE'],
-        }),
+        }
+      };
+
+      // Try 1: POST /webhook/set/{instance} with v2 flat payload
+      let res = await fetch(`${baseUrl}/webhook/set/${instanceName}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payloadV2),
       });
+
+      // Try 2: PUT /webhook/set/{instance}
+      if (!res.ok) {
+        res = await fetch(`${baseUrl}/webhook/set/${instanceName}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(payloadV2),
+        });
+      }
+
+      // Try 3: POST with wrapped payload
+      if (!res.ok) {
+        res = await fetch(`${baseUrl}/webhook/set/${instanceName}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payloadWrapped),
+        });
+      }
 
       if (res.ok) {
         const data = await res.json();
         return NextResponse.json({ success: true, webhookUrl, data });
       } else {
         const errData = await res.json().catch(() => ({}));
-        return NextResponse.json({ success: false, error: `Evolution API retornou HTTP ${res.status}: ${errData?.message || 'Erro desconhecido'}. URL do webhook: ${webhookUrl}` });
+        const errMsg = errData?.message || errData?.error || JSON.stringify(errData).substring(0, 200);
+        return NextResponse.json({
+          success: false,
+          error: `Não foi possível configurar o webhook (HTTP ${res.status}): ${errMsg}. Webhook URL que seria usada: ${webhookUrl}`,
+        });
       }
     } catch (err: any) {
       return NextResponse.json({ success: false, error: err?.message || 'Falha ao configurar webhook na Evolution API' });
     }
   }
+
 
   return NextResponse.json({ instance, instanceName });
 }
