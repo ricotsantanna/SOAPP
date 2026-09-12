@@ -12,7 +12,7 @@ export interface User {
 export interface UserAIKey {
   id?: number;
   user_id: number;
-  provider: 'openai' | 'gemini';
+  provider: 'openai' | 'gemini' | 'claude' | 'nvidia' | 'custom';
   encrypted_api_key: string;
   updated_at?: string;
 }
@@ -24,7 +24,9 @@ export interface WhatsAppInstance {
   status: 'connected' | 'disconnected' | 'connecting';
   phone_number?: string;
   system_prompt?: string;
-  active_provider?: 'openai' | 'gemini';
+  active_provider?: 'openai' | 'gemini' | 'claude' | 'nvidia' | 'custom';
+  custom_base_url?: string;
+  custom_model_name?: string;
   user_email?: string;
 }
 
@@ -80,7 +82,9 @@ export async function initDb() {
         status VARCHAR(50) DEFAULT 'disconnected',
         phone_number VARCHAR(50),
         system_prompt TEXT,
-        active_provider VARCHAR(50) DEFAULT 'openai'
+        active_provider VARCHAR(50) DEFAULT 'openai',
+        custom_base_url TEXT,
+        custom_model_name VARCHAR(100)
       );
     `;
 
@@ -293,13 +297,15 @@ export async function saveWhatsAppInstance(userId: number, data: Partial<WhatsAp
           status = ${data.status || existing.status},
           phone_number = ${data.phone_number || existing.phone_number},
           system_prompt = ${data.system_prompt !== undefined ? data.system_prompt : existing.system_prompt},
-          active_provider = ${data.active_provider || existing.active_provider || 'openai'}
+          active_provider = ${data.active_provider || existing.active_provider || 'openai'},
+          custom_base_url = ${data.custom_base_url !== undefined ? data.custom_base_url : existing.custom_base_url || ''},
+          custom_model_name = ${data.custom_model_name !== undefined ? data.custom_model_name : existing.custom_model_name || ''}
         WHERE id = ${existing.id};
       `;
     } else {
       await sql`
-        INSERT INTO whatsapp_instances (user_id, instance_name, status, phone_number, system_prompt, active_provider)
-        VALUES (${userId}, ${data.instance_name || 'socialone_inst'}, ${data.status || 'disconnected'}, ${data.phone_number || ''}, ${data.system_prompt || ''}, ${data.active_provider || 'openai'});
+        INSERT INTO whatsapp_instances (user_id, instance_name, status, phone_number, system_prompt, active_provider, custom_base_url, custom_model_name)
+        VALUES (${userId}, ${data.instance_name || 'socialone_inst'}, ${data.status || 'disconnected'}, ${data.phone_number || ''}, ${data.system_prompt || ''}, ${data.active_provider || 'openai'}, ${data.custom_base_url || ''}, ${data.custom_model_name || ''});
       `;
     }
     return { success: true };

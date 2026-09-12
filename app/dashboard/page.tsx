@@ -52,11 +52,21 @@ export default function DashboardMasterWorkspace() {
   const [uploadingPdf, setUploadingPdf] = useState(false);
 
   // --- SETTINGS (BYOAI) STATE ---
-  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'gemini'>('openai');
+  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'gemini' | 'claude' | 'nvidia' | 'custom'>('openai');
   const [openaiKey, setOpenaiKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
+  const [claudeKey, setClaudeKey] = useState('');
+  const [nvidiaKey, setNvidiaKey] = useState('');
+  const [customKey, setCustomKey] = useState('');
+  const [customBaseUrl, setCustomBaseUrl] = useState('https://api.groq.com/openai/v1');
+  const [customModelName, setCustomModelName] = useState('llama-3.1-8b-instant');
+
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [showClaudeKey, setShowClaudeKey] = useState(false);
+  const [showNvidiaKey, setShowNvidiaKey] = useState(false);
+  const [showCustomKey, setShowCustomKey] = useState(false);
+
   const [systemPrompt, setSystemPrompt] = useState(
     'Você é o assistente virtual oficial da empresa. Atenda os clientes via WhatsApp com máxima cordialidade e responda com base nos documentos da base de conhecimento.'
   );
@@ -74,11 +84,22 @@ export default function DashboardMasterWorkspace() {
           const sData = await settingsRes.json();
           if (sData.openaiKey) setOpenaiKey(sData.openaiKey);
           if (sData.geminiKey) setGeminiKey(sData.geminiKey);
+          if (sData.claudeKey) setClaudeKey(sData.claudeKey);
+          if (sData.nvidiaKey) setNvidiaKey(sData.nvidiaKey);
+          if (sData.customKey) setCustomKey(sData.customKey);
+          if (sData.customBaseUrl) setCustomBaseUrl(sData.customBaseUrl);
+          if (sData.customModelName) setCustomModelName(sData.customModelName);
           if (sData.systemPrompt) setSystemPrompt(sData.systemPrompt);
           if (sData.activeProvider) {
-            const prov = sData.activeProvider === 'gemini' ? 'gemini' : 'openai';
-            setSelectedProvider(prov);
-            setActiveProviderText(prov === 'gemini' ? 'Google Gemini' : 'OpenAI (GPT-4o)');
+            setSelectedProvider(sData.activeProvider);
+            const textMap: Record<string, string> = {
+              openai: 'OpenAI (GPT-4o)',
+              gemini: 'Google Gemini (Gratuito)',
+              claude: 'Anthropic Claude',
+              nvidia: 'NVIDIA NIM (DeepSeek/Llama 3)',
+              custom: 'Provedor Customizado / Groq'
+            };
+            setActiveProviderText(textMap[sData.activeProvider] || 'OpenAI (GPT-4o)');
           }
         }
 
@@ -258,14 +279,26 @@ export default function DashboardMasterWorkspace() {
           userId: 1,
           openaiKey,
           geminiKey,
+          claudeKey,
+          nvidiaKey,
+          customKey,
           systemPrompt,
-          activeProvider: selectedProvider
+          activeProvider: selectedProvider,
+          customBaseUrl,
+          customModelName
         }),
       });
       const data = await res.json();
       if (data.message) {
         setSavedSettingsMsg(data.message);
-        setActiveProviderText(selectedProvider === 'gemini' ? 'Google Gemini' : 'OpenAI (GPT-4o)');
+        const textMap: Record<string, string> = {
+          openai: 'OpenAI (GPT-4o)',
+          gemini: 'Google Gemini (Gratuito)',
+          claude: 'Anthropic Claude',
+          nvidia: 'NVIDIA NIM (DeepSeek/Llama 3)',
+          custom: 'Provedor Customizado / Groq'
+        };
+        setActiveProviderText(textMap[selectedProvider] || 'OpenAI (GPT-4o)');
         setTimeout(() => setSavedSettingsMsg(null), 7000);
       }
     } catch (error) {
@@ -726,7 +759,7 @@ export default function DashboardMasterWorkspace() {
               <form onSubmit={handleSaveSettings} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1.5">Provedor de IA Ativo</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     <button
                       type="button"
                       onClick={() => setSelectedProvider('openai')}
@@ -753,17 +786,75 @@ export default function DashboardMasterWorkspace() {
                       }`}
                     >
                       <div className="flex items-center space-x-2">
-                        <Bot className="w-4 h-4 text-[#FACC15]" />
-                        <span>Google Gemini</span>
+                        <Bot className="w-4 h-4 text-emerald-400" />
+                        <div className="text-left">
+                          <div>Google Gemini</div>
+                          <div className="text-[9px] text-emerald-400 font-normal">GRATUITO (1.5k req/dia)</div>
+                        </div>
                       </div>
                       {selectedProvider === 'gemini' && <CheckCircle2 className="w-4 h-4 text-[#FACC15]" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProvider('nvidia')}
+                      className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-between ${
+                        selectedProvider === 'nvidia' 
+                          ? 'bg-[#581C87]/40 border-[#86198F] text-white shadow-lg shadow-purple-950/40' 
+                          : 'bg-[#111936] border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Sparkles className="w-4 h-4 text-green-400" />
+                        <div className="text-left">
+                          <div>NVIDIA NIM</div>
+                          <div className="text-[9px] text-green-400 font-normal">GRÁTIS (DeepSeek/Llama 3)</div>
+                        </div>
+                      </div>
+                      {selectedProvider === 'nvidia' && <CheckCircle2 className="w-4 h-4 text-[#FACC15]" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProvider('claude')}
+                      className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-between ${
+                        selectedProvider === 'claude' 
+                          ? 'bg-[#581C87]/40 border-[#86198F] text-white shadow-lg shadow-purple-950/40' 
+                          : 'bg-[#111936] border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Bot className="w-4 h-4 text-amber-400" />
+                        <span>Anthropic Claude</span>
+                      </div>
+                      {selectedProvider === 'claude' && <CheckCircle2 className="w-4 h-4 text-[#FACC15]" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProvider('custom')}
+                      className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-between ${
+                        selectedProvider === 'custom' 
+                          ? 'bg-[#581C87]/40 border-[#86198F] text-white shadow-lg shadow-purple-950/40' 
+                          : 'bg-[#111936] border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Globe className="w-4 h-4 text-cyan-400" />
+                        <div className="text-left">
+                          <div>Custom / Groq</div>
+                          <div className="text-[9px] text-cyan-400 font-normal">API Compatível OpenAI</div>
+                        </div>
+                      </div>
+                      {selectedProvider === 'custom' && <CheckCircle2 className="w-4 h-4 text-[#FACC15]" />}
                     </button>
                   </div>
                 </div>
 
+                {/* 1. OpenAI Input */}
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">
-                    Chave de API OpenAI (BYOAI — Bring Your Own AI)
+                    Chave de API OpenAI (BYOAI)
                   </label>
                   <div className="relative">
                     <input 
@@ -778,13 +869,15 @@ export default function DashboardMasterWorkspace() {
                     </button>
                   </div>
                   <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
-                    💡 <strong>O que é BYOAI?</strong> A Social One não cobra taxas por respostas de inteligência artificial. Cole aqui sua chave pessoal obtida gratuitamente ou paga em <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="text-[#FACC15] hover:underline font-medium">platform.openai.com/api-keys</a>.
+                    💡 <strong>OpenAI GPT-4o:</strong> Cole sua chave obtida em <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="text-[#FACC15] hover:underline font-medium">platform.openai.com/api-keys</a>.
                   </p>
                 </div>
 
+                {/* 2. Gemini Input */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    Chave de API Google Gemini (Opcional)
+                  <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center space-x-2">
+                    <span>Chave de API Google Gemini</span>
+                    <span className="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded font-bold">100% GRATUITO</span>
                   </label>
                   <div className="relative">
                     <input 
@@ -799,8 +892,99 @@ export default function DashboardMasterWorkspace() {
                     </button>
                   </div>
                   <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
-                    💡 Cole sua chave pessoal gratuita do Gemini obtida em <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-[#FACC15] hover:underline font-medium">aistudio.google.com</a>.
+                    🎁 <strong>Gratuito sem cartão:</strong> Crie sua chave com limite de 1.500 requisições/dia em <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-[#FACC15] hover:underline font-medium">aistudio.google.com</a>.
                   </p>
+                </div>
+
+                {/* 3. NVIDIA NIM Input */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center space-x-2">
+                    <span>Chave de API NVIDIA NIM (Llama 3.3 / DeepSeek-R1)</span>
+                    <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded font-bold">10.000 CRÉDITOS GRÁTIS</span>
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type={showNvidiaKey ? 'text' : 'password'}
+                      value={nvidiaKey}
+                      onChange={e => setNvidiaKey(e.target.value)}
+                      placeholder="Cole sua chave NVIDIA NIM aqui (ex: nvapi-...)"
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#111936] border border-slate-800 text-xs text-white focus:outline-none focus:border-[#86198F] pr-10"
+                    />
+                    <button type="button" onClick={() => setShowNvidiaKey(!showNvidiaKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      {showNvidiaKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                    🚀 <strong>NVIDIA NIM:</strong> Acesse DeepSeek-R1 e Llama 3.3 70B super velozes. Obtenha 10.000 créditos gratuitos em <a href="https://build.nvidia.com" target="_blank" rel="noreferrer" className="text-[#FACC15] hover:underline font-medium">build.nvidia.com</a>.
+                  </p>
+                </div>
+
+                {/* 4. Anthropic Claude Input */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Chave de API Anthropic Claude
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type={showClaudeKey ? 'text' : 'password'}
+                      value={claudeKey}
+                      onChange={e => setClaudeKey(e.target.value)}
+                      placeholder="Cole sua chave Anthropic Claude aqui (ex: sk-ant-...)"
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#111936] border border-slate-800 text-xs text-white focus:outline-none focus:border-[#86198F] pr-10"
+                    />
+                    <button type="button" onClick={() => setShowClaudeKey(!showClaudeKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      {showClaudeKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                    🧠 <strong>Anthropic Claude 3.5 Sonnet:</strong> Obtenha sua chave em <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" className="text-[#FACC15] hover:underline font-medium">console.anthropic.com</a>.
+                  </p>
+                </div>
+
+                {/* 5. Custom / Groq / Ollama Input */}
+                <div className="p-4 rounded-2xl bg-[#090E22] border border-cyan-900/40 space-y-3">
+                  <h4 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center space-x-2">
+                    <Globe className="w-4 h-4 text-cyan-400" />
+                    <span>Provedor Customizado / OpenAI Compatível (Groq, DeepSeek, Ollama)</span>
+                  </h4>
+                  
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">Endpoint Base (Base URL)</label>
+                    <input 
+                      type="text"
+                      value={customBaseUrl}
+                      onChange={e => setCustomBaseUrl(e.target.value)}
+                      placeholder="https://api.groq.com/openai/v1 ou http://localhost:11434/v1"
+                      className="w-full px-3 py-2 rounded-xl bg-[#111936] border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">Nome do Modelo</label>
+                    <input 
+                      type="text"
+                      value={customModelName}
+                      onChange={e => setCustomModelName(e.target.value)}
+                      placeholder="ex: llama-3.1-8b-instant, deepseek-coder, etc."
+                      className="w-full px-3 py-2 rounded-xl bg-[#111936] border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">Chave de API (Se exigido)</label>
+                    <div className="relative">
+                      <input 
+                        type={showCustomKey ? 'text' : 'password'}
+                        value={customKey}
+                        onChange={e => setCustomKey(e.target.value)}
+                        placeholder="gsk_... ou chave do provedor"
+                        className="w-full px-3 py-2 rounded-xl bg-[#111936] border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500 pr-10"
+                      />
+                      <button type="button" onClick={() => setShowCustomKey(!showCustomKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                        {showCustomKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
