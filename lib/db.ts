@@ -37,6 +37,15 @@ export interface KnowledgeFile {
   created_at?: string;
 }
 
+export interface Carousel {
+  id?: number;
+  user_id: number;
+  title: string;
+  slides_count: number;
+  date: string;
+  created_at?: string;
+}
+
 /**
  * Initializes database tables according to Social One SQL schema with password authentication.
  */
@@ -81,6 +90,17 @@ export async function initDb() {
         file_type VARCHAR(50) NOT NULL,
         file_url TEXT,
         extracted_text TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS carousels (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        slides_count INT DEFAULT 5,
+        date VARCHAR(50) DEFAULT 'Hoje',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
@@ -130,7 +150,11 @@ const inMemoryStore = {
   knowledgeFiles: [
     { id: 1, user_id: 1, file_name: "Catalogo_Oficial_2026.pdf", file_type: "pdf" as const, created_at: new Date().toISOString() },
     { id: 2, user_id: 2, file_name: "FAQ_Atendimento.pdf", file_type: "pdf" as const, created_at: new Date().toISOString() }
-  ] as KnowledgeFile[]
+  ] as KnowledgeFile[],
+  carousels: [
+    { id: 1, user_id: 1, title: '5 Dicas para Automatizar seu Atendimento', slides_count: 5, date: 'Hoje' },
+    { id: 2, user_id: 1, title: 'Por que o modelo BYOAI economiza até 90%?', slides_count: 4, date: 'Ontem' }
+  ] as Carousel[]
 };
 
 export async function authenticateUser(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
@@ -369,6 +393,60 @@ export async function getPlatformStats() {
       evolutionApiStatus: "ONLINE" as const,
       byoaiInferenceCostSaaS: "R$ 0,00"
     };
+  }
+}
+
+export async function deleteKnowledgeFile(id: number, userId: number) {
+  try {
+    await sql`DELETE FROM knowledge_files WHERE id = ${id} AND user_id = ${userId};`;
+    return { success: true };
+  } catch {
+    const idx = inMemoryStore.knowledgeFiles.findIndex(f => f.id === id && f.user_id === userId);
+    if (idx >= 0) {
+      inMemoryStore.knowledgeFiles.splice(idx, 1);
+    }
+    return { success: true };
+  }
+}
+
+export async function saveCarousel(carousel: Carousel) {
+  try {
+    const inserted = await sql<Carousel>`
+      INSERT INTO carousels (user_id, title, slides_count, date)
+      VALUES (${carousel.user_id}, ${carousel.title}, ${carousel.slides_count || 5}, ${carousel.date || 'Hoje'})
+      RETURNING *;
+    `;
+    return { success: true, carousel: inserted.rows[0] };
+  } catch {
+    const newItem: Carousel = {
+      ...carousel,
+      id: Date.now(),
+      created_at: new Date().toISOString()
+    };
+    inMemoryStore.carousels.unshift(newItem);
+    return { success: true, carousel: newItem };
+  }
+}
+
+export async function getCarousels(userId: number): Promise<Carousel[]> {
+  try {
+    const res = await sql<Carousel>`SELECT * FROM carousels WHERE user_id = ${userId} ORDER BY created_at DESC;`;
+    return res.rows;
+  } catch {
+    return inMemoryStore.carousels.filter(c => c.user_id === userId);
+  }
+}
+
+export async function deleteCarousel(id: number, userId: number) {
+  try {
+    await sql`DELETE FROM carousels WHERE id = ${id} AND user_id = ${userId};`;
+    return { success: true };
+  } catch {
+    const idx = inMemoryStore.carousels.findIndex(c => c.id === id && c.user_id === userId);
+    if (idx >= 0) {
+      inMemoryStore.carousels.splice(idx, 1);
+    }
+    return { success: true };
   }
 }
 

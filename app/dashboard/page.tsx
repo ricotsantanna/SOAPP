@@ -45,29 +45,78 @@ export default function DashboardMasterWorkspace() {
   const [showCarouselModal, setShowCarouselModal] = useState(false);
   const [carouselTopic, setCarouselTopic] = useState('');
   const [carouselLoading, setCarouselLoading] = useState(false);
-  const [carousels, setCarousels] = useState<Array<{ id: number; title: string; slidesCount: number; date: string }>>([
-    { id: 1, title: '5 Dicas para Automatizar seu Atendimento', slidesCount: 5, date: 'Hoje' },
-    { id: 2, title: 'Por que o modelo BYOAI economiza até 90%?', slidesCount: 4, date: 'Ontem' },
-    { id: 3, title: 'Como Conectar WhatsApp e IA em 2 Minutos', slidesCount: 6, date: 'Há 3 dias' }
-  ]);
+  const [carousels, setCarousels] = useState<Array<{ id: number; title: string; slidesCount: number; date: string }>>([]);
 
   // --- KNOWLEDGE BASE (RAG) STATE ---
-  const [knowledgeFiles, setKnowledgeFiles] = useState<Array<{ id: number; name: string; type: string; size: string }>>([
-    { id: 1, name: 'Catálogo_de_Produtos_e_Serviços_2026.pdf', type: 'PDF', size: '2.4 MB' },
-    { id: 2, name: 'Política_de_Atendimento_e_Garantia.pdf', type: 'PDF', size: '890 KB' },
-    { id: 3, name: 'Manual_Técnico_Social_One.pdf', type: 'PDF', size: '1.2 MB' },
-  ]);
+  const [knowledgeFiles, setKnowledgeFiles] = useState<Array<{ id: number; name: string; type: string; size: string }>>([]);
   const [uploadingPdf, setUploadingPdf] = useState(false);
 
   // --- SETTINGS (BYOAI) STATE ---
-  const [openaiKey, setOpenaiKey] = useState('sk-proj-7a892b...x99k');
+  const [openaiKey, setOpenaiKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState(
     'Você é o assistente virtual oficial da empresa. Atenda os clientes via WhatsApp com máxima cordialidade e responda com base nos documentos da base de conhecimento.'
   );
+  const [activeProviderText, setActiveProviderText] = useState('Sem Chave (Demo)');
   const [savedSettingsMsg, setSavedSettingsMsg] = useState(false);
+
+  // Load initial settings, files, and carousels from API on mount
+  useEffect(() => {
+    async function loadInitialData() {
+      try {
+        // Load Settings
+        const settingsRes = await fetch('/api/settings?userId=1');
+        if (settingsRes.ok) {
+          const sData = await settingsRes.json();
+          if (sData.openaiKey) setOpenaiKey(sData.openaiKey);
+          if (sData.geminiKey) setGeminiKey(sData.geminiKey);
+          if (sData.systemPrompt) setSystemPrompt(sData.systemPrompt);
+          if (sData.activeProvider) setActiveProviderText(sData.activeProvider);
+        }
+
+        // Load Knowledge Base
+        const kbRes = await fetch('/api/knowledge?userId=1');
+        if (kbRes.ok) {
+          const kbData = await kbRes.json();
+          if (kbData.files && Array.isArray(kbData.files)) {
+            setKnowledgeFiles(kbData.files.map((f: any) => ({
+              id: f.id,
+              name: f.file_name,
+              type: (f.file_type || 'PDF').toUpperCase(),
+              size: f.size || '1.5 MB'
+            })));
+          }
+        }
+
+        // Load Carousels
+        const cRes = await fetch('/api/carousels?userId=1');
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          if (cData.carousels && Array.isArray(cData.carousels)) {
+            setCarousels(cData.carousels.map((c: any) => ({
+              id: c.id,
+              title: c.title,
+              slidesCount: c.slides_count || 5,
+              date: c.date || 'Hoje'
+            })));
+          }
+        }
+
+        // Load WhatsApp connection status
+        const waRes = await fetch('/api/whatsapp?action=status&userId=1');
+        if (waRes.ok) {
+          const waData = await waRes.json();
+          if (waData.status) setWaStatus(waData.status);
+        }
+      } catch (err) {
+        console.error('Error loading initial dashboard data:', err);
+      }
+    }
+
+    loadInitialData();
+  }, []);
 
   // Handlers
   const handleSendWaMessage = async (e: React.FormEvent) => {
@@ -100,7 +149,7 @@ export default function DashboardMasterWorkspace() {
     setQrLoading(true);
     setQrError(null);
     try {
-      const res = await fetch('/api/whatsapp?action=qrcode', { cache: 'no-store' });
+      const res = await fetch('/api/whatsapp?action=qrcode&userId=1', { cache: 'no-store' });
       const data = await res.json();
       if (data.qrcode) {
         setQrCodeData(data.qrcode);
@@ -117,50 +166,97 @@ export default function DashboardMasterWorkspace() {
     }
   };
 
-  const handleCreateCarousel = (e: React.FormEvent) => {
+  const handleCreateCarousel = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!carouselTopic.trim()) return;
+    if (!carouselTopic.trim() || carouselLoading) return;
 
     setCarouselLoading(true);
-    setTimeout(() => {
-      setCarousels(prev => [
-        {
-          id: Date.now(),
-          title: carouselTopic,
-          slidesCount: 5,
-          date: 'Agora'
-        },
-        ...prev
-      ]);
+    try {
+      const res = await fetch('/api/carousels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: 1, topic: carouselTopic }),
+      });
+      const data = await res.json();
+      if (data.carousel) {
+        setCarousels(prev => [
+          {
+            id: data.carousel.id,
+            title: data.carousel.title,
+            slidesCount: data.carousel.slides_count || 5,
+            date: data.carousel.date || 'Hoje'
+          },
+          ...prev
+        ]);
+      }
       setCarouselTopic('');
-      setCarouselLoading(false);
       setShowCarouselModal(false);
-    }, 1200);
+    } catch (err) {
+      console.error('Error creating carousel:', err);
+    } finally {
+      setCarouselLoading(false);
+    }
   };
 
-  const handleUploadPdf = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDeleteCarousel = async (id: number) => {
+    try {
+      await fetch(`/api/carousels?id=${id}&userId=1`, { method: 'DELETE' });
+      setCarousels(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      console.error('Error deleting carousel:', err);
+    }
+  };
+
+  const handleUploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setUploadingPdf(true);
-    setTimeout(() => {
-      setKnowledgeFiles(prev => [
-        {
-          id: Date.now(),
-          name: files[0].name,
-          type: 'PDF',
-          size: `${(files[0].size / 1024 / 1024).toFixed(1)} MB`
-        },
-        ...prev
-      ]);
+    try {
+      const formData = new FormData();
+      formData.append('file', files[0]);
+      formData.append('userId', '1');
+
+      const res = await fetch('/api/knowledge', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.file) {
+        setKnowledgeFiles(prev => [data.file, ...prev]);
+      }
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+    } finally {
       setUploadingPdf(false);
-    }, 1500);
+    }
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleDeleteKnowledgeFile = async (id: number) => {
+    try {
+      await fetch(`/api/knowledge?id=${id}&userId=1`, { method: 'DELETE' });
+      setKnowledgeFiles(prev => prev.filter(f => f.id !== id));
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSavedSettingsMsg(true);
-    setTimeout(() => setSavedSettingsMsg(false), 3000);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: 1, openaiKey, geminiKey, systemPrompt }),
+      });
+      if (res.ok) {
+        setSavedSettingsMsg(true);
+        setActiveProviderText(openaiKey.trim() ? 'OpenAI (GPT-4o)' : geminiKey.trim() ? 'Google Gemini' : 'Demonstração');
+        setTimeout(() => setSavedSettingsMsg(false), 3500);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
   };
 
   return (
@@ -389,9 +485,17 @@ export default function DashboardMasterWorkspace() {
                           <h5 className="font-bold text-sm text-white truncate max-w-[200px]">{c.title}</h5>
                           <span className="text-xs text-[#E9D5FF]/60">{c.slidesCount} Slides • {c.date}</span>
                         </div>
-                        <span className="text-[10px] font-bold px-2 py-1 rounded bg-[#86198F]/20 text-[#E9D5FF] border border-[#86198F]/40">
-                          PRONTO
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-bold px-2 py-1 rounded bg-[#86198F]/20 text-[#E9D5FF] border border-[#86198F]/40">
+                            PRONTO
+                          </span>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteCarousel(c.id); }}
+                            className="text-slate-500 hover:text-red-400 p-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -502,7 +606,7 @@ export default function DashboardMasterWorkspace() {
                           </div>
                         </div>
                         <button 
-                          onClick={() => setKnowledgeFiles(prev => prev.filter(x => x.id !== f.id))}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteKnowledgeFile(f.id); }}
                           className="text-slate-500 hover:text-red-400 p-1"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -578,7 +682,7 @@ export default function DashboardMasterWorkspace() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
                   <span className="text-xs text-[#E9D5FF]/60">Provedor Ativo</span>
-                  <p className="text-lg font-bold text-[#E9D5FF] mt-1">OpenAI (GPT-4o)</p>
+                  <p className="text-lg font-bold text-[#E9D5FF] mt-1">{activeProviderText}</p>
                 </div>
                 <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
                   <span className="text-xs text-[#E9D5FF]/60">Status do Prompt</span>
@@ -602,6 +706,7 @@ export default function DashboardMasterWorkspace() {
                       type={showOpenaiKey ? 'text' : 'password'}
                       value={openaiKey}
                       onChange={e => setOpenaiKey(e.target.value)}
+                      placeholder="sk-proj-..."
                       className="w-full px-3 py-2.5 rounded-xl bg-[#111936] border border-slate-800 text-xs text-white focus:outline-none focus:border-[#86198F] pr-10"
                     />
                     <button type="button" onClick={() => setShowOpenaiKey(!showOpenaiKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
