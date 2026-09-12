@@ -5,11 +5,15 @@ import { buildRAGContext, constructSystemPrompt } from '@/lib/rag';
 export async function generateAIReply({
   message,
   userId = 1,
-  providerPreference
+  providerPreference,
+  apiKey: directApiKey,
+  systemPrompt: directSystemPrompt,
 }: {
   message: string;
   userId?: number;
   providerPreference?: string;
+  apiKey?: string;
+  systemPrompt?: string;
 }): Promise<{ reply: string; provider: string; ragInjected: boolean }> {
   const user = await getOrCreateDemoUser();
   const uid = user.id || userId;
@@ -21,32 +25,37 @@ export async function generateAIReply({
   // Selected Active Provider
   let provider = providerPreference || instance?.active_provider || 'openai';
 
-  // Find key for selected provider
-  const keyObj = userKeys.find(k => k.provider === provider && k.encrypted_api_key);
-  let plainApiKey = keyObj ? decryptApiKey(keyObj.encrypted_api_key) : '';
+  // If a direct API key was passed from the frontend (bypasses serverless RAM issue), use it
+  let plainApiKey = directApiKey?.trim() || '';
 
-  // Ignore placeholder dummy keys
-  if (plainApiKey.includes('xxxx') || plainApiKey.includes('••••')) {
-    plainApiKey = '';
-  }
+  // Only look up DB keys if no direct key was provided
+  if (!plainApiKey) {
+    const keyObj = userKeys.find(k => k.provider === provider && k.encrypted_api_key);
+    plainApiKey = keyObj ? decryptApiKey(keyObj.encrypted_api_key) : '';
 
-  // Smart Auto-Fallback: If requested provider key is empty, check if user has ANY valid key saved for another provider!
-  if (!plainApiKey && provider !== 'custom') {
-    const fallbackKey = userKeys.find(k => {
-      if (!k.encrypted_api_key) return false;
-      const dec = decryptApiKey(k.encrypted_api_key);
-      return dec && !dec.includes('xxxx') && !dec.includes('••••') && dec.trim().length > 5;
-    });
+    // Ignore placeholder dummy keys
+    if (plainApiKey.includes('xxxx') || plainApiKey.includes('••••')) {
+      plainApiKey = '';
+    }
 
-    if (fallbackKey) {
-      provider = fallbackKey.provider;
-      plainApiKey = decryptApiKey(fallbackKey.encrypted_api_key);
+    // Smart Auto-Fallback: If requested provider key is empty, check if user has ANY valid key saved
+    if (!plainApiKey && provider !== 'custom') {
+      const fallbackKey = userKeys.find(k => {
+        if (!k.encrypted_api_key) return false;
+        const dec = decryptApiKey(k.encrypted_api_key);
+        return dec && !dec.includes('xxxx') && !dec.includes('••••') && dec.trim().length > 5;
+      });
+
+      if (fallbackKey) {
+        provider = fallbackKey.provider;
+        plainApiKey = decryptApiKey(fallbackKey.encrypted_api_key);
+      }
     }
   }
 
   // Build System Prompt + RAG Context
   const ragContext = await buildRAGContext(uid, message);
-  const systemPrompt = constructSystemPrompt(instance?.system_prompt, ragContext);
+  const systemPrompt = directSystemPrompt || constructSystemPrompt(instance?.system_prompt, ragContext);
 
   // Execution with user's BYOAI Key
   if (plainApiKey || provider === 'custom') {

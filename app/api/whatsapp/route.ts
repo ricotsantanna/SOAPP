@@ -158,8 +158,26 @@ export async function POST(req: Request) {
         if (text && text.trim()) {
           console.log(`[WhatsApp Incoming Message] From: ${remoteJid} -> Text: "${text}"`);
 
+          // Read active provider and API key directly from env vars (no DB needed)
+          const activeProvider = process.env.AI_ACTIVE_PROVIDER || 'openai';
+          const envKeyMap: Record<string, string | undefined> = {
+            openai: process.env.OPENAI_API_KEY,
+            gemini: process.env.GEMINI_API_KEY,
+            claude: process.env.CLAUDE_API_KEY,
+            nvidia: process.env.NVIDIA_API_KEY,
+            custom: process.env.CUSTOM_API_KEY,
+          };
+          const directApiKey = envKeyMap[activeProvider] || '';
+          const directSystemPrompt = process.env.AI_SYSTEM_PROMPT;
+
           // Directly call AI generation engine with RAG context
-          const aiResult = await generateAIReply({ message: text, userId: 1 });
+          const aiResult = await generateAIReply({ 
+            message: text, 
+            userId: 1, 
+            providerPreference: activeProvider,
+            apiKey: directApiKey || undefined,
+            systemPrompt: directSystemPrompt || undefined,
+          });
           console.log(`[WhatsApp AI Response] Generated via ${aiResult.provider}: "${aiResult.reply.substring(0, 50)}..."`);
 
           // Send back answer via WhatsApp Evolution API

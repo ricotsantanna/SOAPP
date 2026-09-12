@@ -269,13 +269,58 @@ export async function saveAIKey(userId: number, provider: 'openai' | 'gemini' | 
 }
 
 export async function getAIKeys(userId: number): Promise<UserAIKey[]> {
+  // Try to build keys from environment variables first as a reliable fallback
+  // (works in serverless where inMemoryStore is ephemeral)
+  const envKeyMap: Record<string, string | undefined> = {
+    openai: process.env.OPENAI_API_KEY,
+    gemini: process.env.GEMINI_API_KEY,
+    claude: process.env.CLAUDE_API_KEY,
+    nvidia: process.env.NVIDIA_API_KEY,
+    custom: process.env.CUSTOM_API_KEY,
+  };
+
+  // Import encryption inline to avoid circular deps
+  let encFn: ((k: string) => string) | null = null;
+  try {
+    const enc = await import('./encryption');
+    encFn = enc.encryptApiKey;
+  } catch {}
+
+  const envKeys: UserAIKey[] = [];
+  for (const [provider, envVal] of Object.entries(envKeyMap)) {
+    if (envVal && envVal.trim() && !envVal.includes('xxxx')) {
+      const encrypted = encFn ? encFn(envVal.trim()) : envVal.trim();
+      envKeys.push({ user_id: userId, provider: provider as UserAIKey['provider'], encrypted_api_key: encrypted });
+    }
+  }
+
   try {
     const res = await sql<UserAIKey>`SELECT * FROM user_ai_keys WHERE user_id = ${userId};`;
-    return res.rows;
+    // Merge: DB rows take precedence over env vars
+    const dbKeys = res.rows;
+    const merged = [...envKeys];
+    for (const dbKey of dbKeys) {
+      const idx = merged.findIndex(k => k.provider === dbKey.provider);
+      if (idx >= 0) merged[idx] = dbKey;
+      else merged.push(dbKey);
+    }
+    return merged;
   } catch {
-    return inMemoryStore.aiKeys.filter(k => k.user_id === userId);
+    const memKeys = inMemoryStore.aiKeys.filter(k => k.user_id === userId);
+    if (memKeys.length > 0) {
+      // Merge mem keys over env keys
+      const merged = [...envKeys];
+      for (const mk of memKeys) {
+        const idx = merged.findIndex(k => k.provider === mk.provider);
+        if (idx >= 0) merged[idx] = mk;
+        else merged.push(mk);
+      }
+      return merged;
+    }
+    return envKeys;
   }
 }
+
 
 export async function getWhatsAppInstance(userId: number): Promise<WhatsAppInstance | null> {
   try {

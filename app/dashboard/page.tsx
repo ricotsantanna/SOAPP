@@ -95,7 +95,41 @@ export default function DashboardMasterWorkspace() {
   useEffect(() => {
     async function loadInitialData() {
       try {
-        // Load Settings
+        // First, load from localStorage (immediate, works regardless of DB)
+        const localSettings = localStorage.getItem('soapp_settings');
+        if (localSettings) {
+          try {
+            const local = JSON.parse(localSettings);
+            if (local.openaiKey) setOpenaiKey(local.openaiKey);
+            if (local.geminiKey) setGeminiKey(local.geminiKey);
+            if (local.claudeKey) setClaudeKey(local.claudeKey);
+            if (local.nvidiaKey) setNvidiaKey(local.nvidiaKey);
+            if (local.customKey) setCustomKey(local.customKey);
+            if (local.customBaseUrl) setCustomBaseUrl(local.customBaseUrl);
+            if (local.customModelName) setCustomModelName(local.customModelName);
+            if (local.systemPrompt) setSystemPrompt(local.systemPrompt);
+            if (local.activeProvider) {
+              setSelectedProvider(local.activeProvider);
+              const textMap: Record<string, string> = {
+                openai: 'OpenAI (GPT-4o)',
+                gemini: 'Google Gemini (Gratuito)',
+                claude: 'Anthropic Claude',
+                nvidia: 'NVIDIA NIM (DeepSeek/Llama 3)',
+                custom: 'Provedor Customizado / Groq'
+              };
+              setActiveProviderText(textMap[local.activeProvider] || 'OpenAI (GPT-4o)');
+            }
+            setSavedKeys({
+              openai: !!local.openaiKey && !local.openaiKey.includes('xxxx'),
+              gemini: !!local.geminiKey && !local.geminiKey.includes('xxxx'),
+              claude: !!local.claudeKey && !local.claudeKey.includes('xxxx'),
+              nvidia: !!local.nvidiaKey && !local.nvidiaKey.includes('xxxx'),
+              custom: !!local.customKey && !local.customKey.includes('xxxx'),
+            });
+          } catch (_) {}
+        }
+
+        // Then try server (will override if DB has keys)
         const settingsRes = await fetch('/api/settings?userId=1');
         if (settingsRes.ok) {
           const sObj = await settingsRes.json();
@@ -183,10 +217,26 @@ export default function DashboardMasterWorkspace() {
     setChatLoading(true);
 
     try {
+      // Get the active API key directly from state (bypasses serverless memory limitations)
+      const activeKeyMap: Record<string, string> = {
+        openai: openaiKey,
+        gemini: geminiKey,
+        claude: claudeKey,
+        nvidia: nvidiaKey,
+        custom: customKey,
+      };
+      const activeApiKey = activeKeyMap[selectedProvider] || '';
+
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText, userId: 1, providerPreference: selectedProvider }),
+        body: JSON.stringify({
+          message: userText,
+          userId: 1,
+          providerPreference: selectedProvider,
+          apiKey: activeApiKey,
+          systemPrompt: systemPrompt,
+        }),
       });
       const data = await res.json();
       setChatMessages(prev => [...prev, { sender: 'ai', text: data.reply || 'Sem resposta.' }]);
@@ -327,6 +377,13 @@ export default function DashboardMasterWorkspace() {
     e.preventDefault();
     setSavingSettings(true);
     try {
+      // Save to localStorage FIRST — works without a database, survives page refresh
+      const settingsToSave = {
+        openaiKey, geminiKey, claudeKey, nvidiaKey, customKey,
+        systemPrompt, activeProvider: selectedProvider, customBaseUrl, customModelName
+      };
+      localStorage.setItem('soapp_settings', JSON.stringify(settingsToSave));
+
       const res = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -345,7 +402,7 @@ export default function DashboardMasterWorkspace() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setSavedSettingsMsg(data.notice || 'Configurações salvas com sucesso!');
+        setSavedSettingsMsg(data.message || data.notice || '✅ Configurações salvas com sucesso!');
         setSavedKeys({
           openai: !!openaiKey && !openaiKey.includes('xxxx'),
           gemini: !!geminiKey && !geminiKey.includes('xxxx'),
@@ -361,13 +418,24 @@ export default function DashboardMasterWorkspace() {
           custom: 'Provedor Customizado / Groq'
         };
         setActiveProviderText(textMap[selectedProvider] || 'OpenAI (GPT-4o)');
+
+        // Also sync keys to Vercel env vars so WhatsApp webhook can use them
+        fetch('/api/sync-keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ openaiKey, geminiKey, claudeKey, nvidiaKey, customKey, activeProvider: selectedProvider }),
+        }).then(syncRes => syncRes.json()).then(syncData => {
+          if (syncData.success) {
+            setSavedSettingsMsg(prev => (prev || '') + '\n🔗 Chaves sincronizadas com WhatsApp automaticamente!');
+          }
+        }).catch(() => {}); // Silently fail if Vercel API not configured
       } else {
-        setSavedSettingsMsg(data.notice || 'Erro ao salvar configurações.');
+        setSavedSettingsMsg(data.message || data.notice || '⚠️ Erro ao salvar configurações no servidor, mas salvo localmente.');
       }
       setTimeout(() => setSavedSettingsMsg(null), 7000);
     } catch (error) {
       console.error('Error saving settings:', error);
-      setSavedSettingsMsg('⚠️ Erro ao comunicar com o servidor.');
+      setSavedSettingsMsg('⚠️ Erro ao comunicar com o servidor. Chave salva localmente.');
     } finally {
       setSavingSettings(false);
     }
