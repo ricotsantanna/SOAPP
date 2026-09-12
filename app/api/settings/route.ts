@@ -98,19 +98,22 @@ export async function GET(req: Request) {
     const customModelName = instance?.custom_model_name || 'llama-3.1-8b-instant';
 
     return NextResponse.json({
-      openaiKey,
-      geminiKey,
-      claudeKey,
-      nvidiaKey,
-      customKey,
-      systemPrompt,
-      activeProvider,
-      customBaseUrl,
-      customModelName,
+      success: true,
+      data: {
+        openaiKey,
+        geminiKey,
+        claudeKey,
+        nvidiaKey,
+        customKey,
+        systemPrompt,
+        activeProvider,
+        customBaseUrl,
+        customModelName,
+      }
     });
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return NextResponse.json({ error: 'Erro ao carregar configurações' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erro ao carregar configurações' }, { status: 500 });
   }
 }
 
