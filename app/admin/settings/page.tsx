@@ -18,7 +18,7 @@ import { testVpsConnection } from '@/lib/evolution';
 
 export default function AdminSettings() {
   const [evolutionUrl, setEvolutionUrl] = useState('https://markei-evolution-api.ro91ry.easypanel.host');
-  const [evolutionKey, setEvolutionKey] = useState('socialone_global_apikey');
+  const [evolutionKey, setEvolutionKey] = useState('c5EJIE3WEJWKLa8ZpcvLu68y5SGOd4VH');
   const [defaultPersona, setDefaultPersona] = useState(
     'Você é o assistente virtual oficial corporativo da Social One. Atenda os clientes com extrema cordialidade, objetividade e clareza.'
   );
@@ -112,7 +112,7 @@ export default function AdminSettings() {
                 required
                 value={evolutionKey}
                 onChange={e => setEvolutionKey(e.target.value)}
-                placeholder="Sua chave secreta global configurada na Evolution API"
+                placeholder="c5EJIE3WEJWKLa8ZpcvLu68y5SGOd4VH"
                 className="w-full px-4 py-3 rounded-xl bg-[#090E22] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#86198F] font-mono"
               />
             </div>

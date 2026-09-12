@@ -17,9 +17,10 @@ export function getEvolutionBaseUrl(): string {
 
 /**
  * Gets the Global Evolution API Key.
+ * Pre-configured for Easypanel key: c5EJIE3WEJWKLa8ZpcvLu68y5SGOd4VH
  */
 export function getEvolutionApiKey(): string {
-  return process.env.EVOLUTION_API_KEY || 'socialone_global_apikey';
+  return process.env.EVOLUTION_API_KEY || 'c5EJIE3WEJWKLa8ZpcvLu68y5SGOd4VH';
 }
 
 /**
@@ -52,7 +53,7 @@ export async function testVpsConnection(customUrl?: string, customKey?: string):
   } catch (error) {
     return {
       online: false,
-      message: `Não foi possível alcançar a Evolution API em ${baseUrl}. Verifique a URL e se o serviço está online no Easypanel.`,
+      message: `Não foi possível alcançar a Evolution API em ${baseUrl}. Verifique se a API está ativa no Easypanel.`,
     };
   }
 }
