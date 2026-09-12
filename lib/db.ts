@@ -30,6 +30,7 @@ export interface WhatsAppInstance {
   custom_base_url?: string;
   custom_model_name?: string;
   user_email?: string;
+  bot_paused_until?: string | null;
 }
 
 export interface KnowledgeFile {
@@ -104,6 +105,8 @@ export async function initDb() {
         custom_model_name VARCHAR(100)
       );
     `;
+
+    await sql`ALTER TABLE whatsapp_instances ADD COLUMN IF NOT EXISTS bot_paused_until TIMESTAMP;`.catch(() => {});
 
     await sql`
       CREATE TABLE IF NOT EXISTS knowledge_files (
@@ -629,3 +632,35 @@ export async function getUserProfile(userId: number): Promise<User | undefined> 
     return inMemoryStore.users.find(u => u.id === userId);
   }
 }
+
+export async function pauseBotInstance(userId: number, instanceName: string, durationHours: number | null) {
+  const pausedUntil = durationHours ? new Date(Date.now() + durationHours * 3600 * 1000).toISOString() : null;
+  try {
+    if (pausedUntil) {
+      await sql`UPDATE whatsapp_instances SET bot_paused_until = ${pausedUntil} WHERE user_id = ${userId} AND instance_name = ${instanceName};`;
+    } else {
+      await sql`UPDATE whatsapp_instances SET bot_paused_until = NULL WHERE user_id = ${userId} AND instance_name = ${instanceName};`;
+    }
+    return { success: true, pausedUntil };
+  } catch {
+    const inst = inMemoryStore.instances.find(i => i.user_id === userId && i.instance_name === instanceName);
+    if (inst) inst.bot_paused_until = pausedUntil;
+    return { success: true, pausedUntil };
+  }
+}
+
+export async function isBotPaused(userId: number, instanceName: string): Promise<{ isPaused: boolean; pausedUntil: string | null }> {
+  try {
+    const res = await sql`SELECT bot_paused_until FROM whatsapp_instances WHERE user_id = ${userId} AND instance_name = ${instanceName};`;
+    const pausedUntil = res.rows[0]?.bot_paused_until;
+    if (!pausedUntil) return { isPaused: false, pausedUntil: null };
+    const isPaused = new Date(pausedUntil) > new Date();
+    return { isPaused, pausedUntil };
+  } catch {
+    const inst = inMemoryStore.instances.find(i => i.user_id === userId && i.instance_name === instanceName);
+    if (!inst?.bot_paused_until) return { isPaused: false, pausedUntil: null };
+    const isPaused = new Date(inst.bot_paused_until) > new Date();
+    return { isPaused, pausedUntil: inst.bot_paused_until };
+  }
+}
+

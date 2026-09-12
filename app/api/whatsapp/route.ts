@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getWhatsAppInstance, saveWhatsAppInstance, saveChatMessage } from '@/lib/db';
+import { getWhatsAppInstance, saveWhatsAppInstance, saveChatMessage, isBotPaused } from '@/lib/db';
 import { fetchQrCode, sendWhatsAppMessage, getInstanceStatus, logoutInstance } from '@/lib/evolution';
 import { generateAIReply } from '@/lib/ai';
 
@@ -163,7 +163,14 @@ export async function POST(req: Request) {
           // 1. Save customer message to DB
           await saveChatMessage(1, 'user', text, remoteJid);
 
-          // 2. Call AI generation engine with 15-message memory
+          // 2. Check if bot is paused for human handoff
+          const pauseStatus = await isBotPaused(1, instanceName);
+          if (pauseStatus.isPaused) {
+            console.log(`[WhatsApp AI Paused] Bot is paused for instance ${instanceName} until ${pauseStatus.pausedUntil}. Skipping automatic AI response.`);
+            return NextResponse.json({ status: 'bot_paused_for_human' });
+          }
+
+          // 3. Call AI generation engine with 15-message memory
           const aiResult = await generateAIReply({ 
             message: text, 
             userId: 1,
@@ -171,10 +178,10 @@ export async function POST(req: Request) {
           });
           console.log(`[WhatsApp AI Response] Generated via ${aiResult.provider}: "${aiResult.reply.substring(0, 50)}..."`);
 
-          // 3. Save AI reply to DB
+          // 4. Save AI reply to DB
           await saveChatMessage(1, 'assistant', aiResult.reply, remoteJid);
 
-          // 4. Send back answer via WhatsApp Evolution API
+          // 5. Send back answer via WhatsApp Evolution API
           await sendWhatsAppMessage(instanceName, remoteJid, aiResult.reply);
         }
       }

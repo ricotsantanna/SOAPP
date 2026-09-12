@@ -57,6 +57,10 @@ export default function DashboardMasterWorkspace() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrLoading, setQrLoading] = useState(false);
 
+  const [botPaused, setBotPaused] = useState(false);
+  const [botPausedUntil, setBotPausedUntil] = useState<string | null>(null);
+  const [pausingBot, setPausingBot] = useState(false);
+
   const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([
     { sender: 'ai', text: 'Olá! Sou o atendente virtual do WhatsApp da Social One. Como posso te ajudar?' }
   ]);
@@ -234,6 +238,14 @@ export default function DashboardMasterWorkspace() {
           if (waData.status) setWaStatus(waData.status);
         }
 
+        // Load Bot Pause / Human Handoff status
+        const pauseRes = await fetch('/api/whatsapp/pause-bot?userId=1');
+        if (pauseRes.ok) {
+          const pData = await pauseRes.json();
+          setBotPaused(pData.isPaused);
+          setBotPausedUntil(pData.pausedUntil);
+        }
+
         // Load live chat messages
         const chatRes = await fetch('/api/ai/chat?userId=1');
         if (chatRes.ok) {
@@ -345,6 +357,26 @@ export default function DashboardMasterWorkspace() {
       setQrError('Erro de comunicação com a Evolution API.');
     } finally {
       setQrLoading(false);
+    }
+  };
+
+  const handleTogglePauseBot = async (durationHours: number | null) => {
+    setPausingBot(true);
+    try {
+      const res = await fetch('/api/whatsapp/pause-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: 1, instanceName: 'socialone_admin', durationHours }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBotPaused(!!data.pausedUntil);
+        setBotPausedUntil(data.pausedUntil);
+      }
+    } catch (err) {
+      console.error('Error toggling bot pause:', err);
+    } finally {
+      setPausingBot(false);
     }
   };
 
@@ -627,19 +659,61 @@ export default function DashboardMasterWorkspace() {
                 </div>
               </div>
 
-              {/* Action Button & Live Simulator Box */}
+              {/* Action Buttons & Human Handoff */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <button 
-                    onClick={handleFetchQr}
-                    className="px-5 py-2.5 rounded-xl bg-[#FACC15] text-slate-950 font-bold text-sm hover:bg-[#FDE047] transition-colors shadow-lg shadow-[#FACC15]/10 flex items-center space-x-2"
-                  >
-                    <QrCode className="w-4 h-4" />
-                    <span>Gerenciar Instância</span>
-                  </button>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={handleFetchQr}
+                      className="px-5 py-2.5 rounded-xl bg-[#FACC15] text-slate-950 font-bold text-sm hover:bg-[#FDE047] transition-colors shadow-lg shadow-[#FACC15]/10 flex items-center space-x-2"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      <span>Gerenciar Instância</span>
+                    </button>
+
+                    {!botPaused ? (
+                      <div className="flex items-center space-x-1.5">
+                        <button
+                          onClick={() => handleTogglePauseBot(2)}
+                          disabled={pausingBot}
+                          className="px-4 py-2.5 rounded-xl bg-[#86198F]/20 hover:bg-[#86198F]/40 text-[#E9D5FF] border border-[#86198F]/50 font-bold text-xs transition-colors flex items-center space-x-1.5"
+                        >
+                          <Lock className="w-3.5 h-3.5 text-[#FACC15]" />
+                          <span>Assumir Conversa (Pausar 2h)</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleTogglePauseBot(null)}
+                        disabled={pausingBot}
+                        className="px-4 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold text-xs transition-colors flex items-center space-x-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Reativar IA Agora</span>
+                      </button>
+                    )}
+                  </div>
 
                   <span className="text-xs text-[#E9D5FF]/70 font-mono">Easypanel Host</span>
                 </div>
+
+                {botPaused && (
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>
+                        <strong>Atendimento Humano Ativo:</strong> O bot de IA está pausado até{' '}
+                        {botPausedUntil ? new Date(botPausedUntil).toLocaleString('pt-BR') : 'retomada manual'}.
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleTogglePauseBot(null)}
+                      className="font-bold text-amber-400 hover:underline shrink-0 ml-2"
+                    >
+                      Reativar IA
+                    </button>
+                  </div>
+                )}
 
                 {/* Live Chat Box */}
                 <div className="p-4 rounded-2xl bg-[#090E22] border border-slate-800 space-y-3">
