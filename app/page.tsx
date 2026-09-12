@@ -548,6 +548,12 @@ export default function LandingPage() {
             <span className="font-bold text-slate-200">Social One</span>
             <span>— socialoneapp.com.br</span>
           </div>
+          <div className="flex items-center space-x-6 flex-wrap justify-center gap-y-2">
+            <Link href="/sobre" className="hover:text-brand-amber transition-colors">Sobre a Plataforma</Link>
+            <Link href="/contato" className="hover:text-brand-amber transition-colors">Contato</Link>
+            <Link href="/privacidade" className="hover:text-brand-amber transition-colors">Privacidade</Link>
+            <Link href="/termos" className="hover:text-brand-amber transition-colors">Termos de Uso</Link>
+          </div>
           <div>
             &copy; {new Date().getFullYear()} Social One. Todos os direitos reservados.
           </div>
