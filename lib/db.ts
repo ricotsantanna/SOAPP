@@ -241,7 +241,7 @@ export async function getOrCreateDemoUser(email: string = "admin@socialoneapp.co
   }
 }
 
-export async function saveAIKey(userId: number, provider: 'openai' | 'gemini', encryptedApiKey: string) {
+export async function saveAIKey(userId: number, provider: 'openai' | 'gemini' | 'claude' | 'nvidia' | 'custom', encryptedApiKey: string) {
   try {
     const existing = await sql`SELECT id FROM user_ai_keys WHERE user_id = ${userId} AND provider = ${provider};`;
     if (existing.rows.length > 0) {
