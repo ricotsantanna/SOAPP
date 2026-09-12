@@ -28,7 +28,7 @@ export default function DashboardMasterWorkspace() {
   const [active, setActive] = useState<'whatsapp' | 'instagram' | 'knowledge' | 'settings'>('whatsapp');
 
   // --- WHATSAPP STATE ---
-  const [waStatus, setWaStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connected');
+  const [waStatus, setWaStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
   const [waMessagesCount, setWaMessagesCount] = useState(0);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [qrError, setQrError] = useState<string | null>(null);
@@ -73,6 +73,8 @@ export default function DashboardMasterWorkspace() {
   const [activeProviderText, setActiveProviderText] = useState('OpenAI (GPT-4o)');
   const [savedSettingsMsg, setSavedSettingsMsg] = useState<string | null>(null);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [webhookSetupMsg, setWebhookSetupMsg] = useState<string | null>(null);
+  const [settingUpWebhook, setSettingUpWebhook] = useState(false);
 
   // Load initial settings, files, and carousels from API on mount
   useEffect(() => {
@@ -306,6 +308,25 @@ export default function DashboardMasterWorkspace() {
       setSavedSettingsMsg('⚠️ Erro ao comunicar com o servidor.');
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const handleSetupWebhook = async () => {
+    setSettingUpWebhook(true);
+    setWebhookSetupMsg(null);
+    try {
+      const res = await fetch('/api/whatsapp?action=setup-webhook&userId=1', { cache: 'no-store' });
+      const data = await res.json();
+      if (data.success) {
+        setWebhookSetupMsg(`✅ Webhook configurado! A IA agora responderá automaticamente no WhatsApp Business.`);
+      } else {
+        setWebhookSetupMsg(`⚠️ ${data.error || 'Erro ao configurar webhook. Verifique a Evolution API.'}`);
+      }
+    } catch (err: any) {
+      setWebhookSetupMsg(`⚠️ Erro: ${err?.message || 'Falha de comunicação.'}`);
+    } finally {
+      setSettingUpWebhook(false);
+      setTimeout(() => setWebhookSetupMsg(null), 10000);
     }
   };
 
@@ -855,7 +876,7 @@ export default function DashboardMasterWorkspace() {
                       setActiveProviderText('Provedor Customizado / Groq');
                     }}
                     className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
-                      customKey || customBaseUrl !== 'https://api.groq.com/openai/v1'
+                      customKey && !customKey.includes('xxxx')
                         ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
                         : 'bg-slate-900/40 border-slate-800 text-slate-400'
                     } ${selectedProvider === 'custom' ? 'ring-2 ring-[#86198F]' : ''}`}
@@ -864,10 +885,10 @@ export default function DashboardMasterWorkspace() {
                       <Globe className="w-3.5 h-3.5 text-cyan-400" />
                       <span>Custom / Groq</span>
                     </div>
-                    {customKey || customBaseUrl ? (
+                    {customKey && !customKey.includes('xxxx') ? (
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3" />
-                        <span>Ativo</span>
+                        <span>Ativa</span>
                       </span>
                     ) : (
                       <span className="text-[10px] text-slate-500 font-normal">Pendente</span>
@@ -1089,6 +1110,45 @@ export default function DashboardMasterWorkspace() {
                   </div>
                 )}
               </form>
+
+              {/* WhatsApp Webhook Integration Card */}
+              <div className="p-4 rounded-2xl bg-[#090E22] border border-[#FACC15]/20 space-y-3">
+                <div className="flex items-center space-x-2">
+                  <MessageSquare className="w-4 h-4 text-[#FACC15]" />
+                  <h4 className="text-xs font-bold text-slate-200">Ativar IA no WhatsApp Business</h4>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Após salvar sua chave de IA, clique no botão abaixo para configurar automaticamente o webhook na sua Evolution API e ativar as respostas automáticas no WhatsApp Business.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSetupWebhook}
+                  disabled={settingUpWebhook}
+                  className="w-full py-3 rounded-xl bg-[#581C87] text-white font-bold text-xs hover:bg-[#6D28D9] transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+                >
+                  {settingUpWebhook ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Configurando Webhook...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bot className="w-4 h-4" />
+                      <span>Ativar IA no WhatsApp Business (Configurar Webhook)</span>
+                    </>
+                  )}
+                </button>
+                {webhookSetupMsg && (
+                  <div className={`p-3 rounded-xl border text-xs flex items-start space-x-2 leading-relaxed ${
+                    webhookSetupMsg.startsWith('⚠️')
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                      : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  }`}>
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>{webhookSetupMsg}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

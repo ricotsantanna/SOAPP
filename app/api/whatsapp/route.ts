@@ -32,6 +32,40 @@ export async function GET(req: Request) {
     });
   }
 
+  if (action === 'setup-webhook') {
+    try {
+      const baseUrl = (process.env.EVOLUTION_API_URL || 'https://markei-evolution-api.ro91ry.easypanel.host').replace(/\/$/, '').replace(/\/manager$/, '');
+      const apiKey = process.env.EVOLUTION_API_KEY || 'c5EJIE3WEJWKLa8ZpcvLu68y5SGOd4VH';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://socialoneapp.com.br';
+      const webhookUrl = `${appUrl}/api/whatsapp`;
+
+      const res = await fetch(`${baseUrl}/webhook/set/${instanceName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': apiKey,
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          url: webhookUrl,
+          webhook_by_events: false,
+          webhook_base64: false,
+          events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE'],
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        return NextResponse.json({ success: true, webhookUrl, data });
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        return NextResponse.json({ success: false, error: `Evolution API retornou HTTP ${res.status}: ${errData?.message || 'Erro desconhecido'}. URL do webhook: ${webhookUrl}` });
+      }
+    } catch (err: any) {
+      return NextResponse.json({ success: false, error: err?.message || 'Falha ao configurar webhook na Evolution API' });
+    }
+  }
+
   return NextResponse.json({ instance, instanceName });
 }
 
