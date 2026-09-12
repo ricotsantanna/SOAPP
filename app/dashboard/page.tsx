@@ -61,7 +61,8 @@ export default function DashboardMasterWorkspace() {
     'Você é o assistente virtual oficial da empresa. Atenda os clientes via WhatsApp com máxima cordialidade e responda com base nos documentos da base de conhecimento.'
   );
   const [activeProviderText, setActiveProviderText] = useState('OpenAI (GPT-4o)');
-  const [savedSettingsMsg, setSavedSettingsMsg] = useState(false);
+  const [savedSettingsMsg, setSavedSettingsMsg] = useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   // Load initial settings, files, and carousels from API on mount
   useEffect(() => {
@@ -77,7 +78,7 @@ export default function DashboardMasterWorkspace() {
           if (sData.activeProvider) {
             const prov = sData.activeProvider === 'gemini' ? 'gemini' : 'openai';
             setSelectedProvider(prov);
-            setActiveProviderText(prov === 'gemini' ? 'Google Gemini 1.5 Flash' : 'OpenAI (GPT-4o)');
+            setActiveProviderText(prov === 'gemini' ? 'Google Gemini' : 'OpenAI (GPT-4o)');
           }
         }
 
@@ -248,6 +249,7 @@ export default function DashboardMasterWorkspace() {
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSavingSettings(true);
     try {
       const res = await fetch('/api/settings', {
         method: 'POST',
@@ -260,13 +262,17 @@ export default function DashboardMasterWorkspace() {
           activeProvider: selectedProvider
         }),
       });
-      if (res.ok) {
-        setSavedSettingsMsg(true);
-        setActiveProviderText(selectedProvider === 'gemini' ? 'Google Gemini 1.5 Flash' : 'OpenAI (GPT-4o)');
-        setTimeout(() => setSavedSettingsMsg(false), 3500);
+      const data = await res.json();
+      if (data.message) {
+        setSavedSettingsMsg(data.message);
+        setActiveProviderText(selectedProvider === 'gemini' ? 'Google Gemini' : 'OpenAI (GPT-4o)');
+        setTimeout(() => setSavedSettingsMsg(null), 7000);
       }
     } catch (error) {
       console.error('Error saving settings:', error);
+      setSavedSettingsMsg('⚠️ Erro ao comunicar com o servidor.');
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -706,9 +712,13 @@ export default function DashboardMasterWorkspace() {
               </div>
 
               {savedSettingsMsg && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center space-x-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Configurações salvas e criptografadas com sucesso!</span>
+                <div className={`p-3.5 rounded-xl border text-xs flex items-start space-x-2.5 leading-relaxed ${
+                  savedSettingsMsg.startsWith('⚠️')
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                }`}>
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{savedSettingsMsg}</span>
                 </div>
               )}
 
@@ -752,35 +762,45 @@ export default function DashboardMasterWorkspace() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Chave de API OpenAI (BYOAI)</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Chave de API OpenAI (BYOAI — Bring Your Own AI)
+                  </label>
                   <div className="relative">
                     <input 
                       type={showOpenaiKey ? 'text' : 'password'}
                       value={openaiKey}
                       onChange={e => setOpenaiKey(e.target.value)}
-                      placeholder="sk-proj-..."
+                      placeholder="Cole sua chave OpenAI aqui (ex: sk-proj-...)"
                       className="w-full px-3 py-2.5 rounded-xl bg-[#111936] border border-slate-800 text-xs text-white focus:outline-none focus:border-[#86198F] pr-10"
                     />
                     <button type="button" onClick={() => setShowOpenaiKey(!showOpenaiKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
                       {showOpenaiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                    💡 <strong>O que é BYOAI?</strong> A Social One não cobra taxas por respostas de inteligência artificial. Cole aqui sua chave pessoal obtida gratuitamente ou paga em <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="text-[#FACC15] hover:underline font-medium">platform.openai.com/api-keys</a>.
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Chave de API Google Gemini (Opcional)</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Chave de API Google Gemini (Opcional)
+                  </label>
                   <div className="relative">
                     <input 
                       type={showGeminiKey ? 'text' : 'password'}
                       value={geminiKey}
                       onChange={e => setGeminiKey(e.target.value)}
-                      placeholder="AIzaSy..."
+                      placeholder="Cole sua chave Gemini aqui (ex: AIzaSy...)"
                       className="w-full px-3 py-2.5 rounded-xl bg-[#111936] border border-slate-800 text-xs text-white focus:outline-none focus:border-[#86198F] pr-10"
                     />
                     <button type="button" onClick={() => setShowGeminiKey(!showGeminiKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
                       {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
+                    💡 Cole sua chave pessoal gratuita do Gemini obtida em <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-[#FACC15] hover:underline font-medium">aistudio.google.com</a>.
+                  </p>
                 </div>
 
                 <div>
@@ -795,9 +815,17 @@ export default function DashboardMasterWorkspace() {
 
                 <button 
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-[#FACC15] text-slate-950 font-bold text-sm hover:bg-[#FDE047] transition-colors shadow-lg shadow-[#FACC15]/10"
+                  disabled={savingSettings}
+                  className="px-6 py-3 rounded-xl bg-[#FACC15] text-slate-950 font-bold text-sm hover:bg-[#FDE047] transition-colors shadow-lg shadow-[#FACC15]/10 flex items-center space-x-2 disabled:opacity-50"
                 >
-                  Salvar Configurações
+                  {savingSettings ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Testando e Salvando Chave...</span>
+                    </>
+                  ) : (
+                    <span>Salvar Configurações & Testar Chave</span>
+                  )}
                 </button>
               </form>
             </div>
