@@ -732,15 +732,147 @@ export default function DashboardMasterWorkspace() {
                 </p>
               </div>
 
-              {/* Metrics Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
-                  <span className="text-xs text-[#E9D5FF]/60">Provedor Ativo</span>
-                  <p className="text-lg font-bold text-[#E9D5FF] mt-1">{activeProviderText}</p>
+              {/* Status das Chaves Cadastradas */}
+              <div className="p-4.5 rounded-2xl bg-[#111936] border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Status das Suas Chaves de IA Cadastradas</h4>
+                  <span className="text-[10px] text-[#FACC15] font-semibold">Clique para editar uma chave</span>
                 </div>
-                <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
-                  <span className="text-xs text-[#E9D5FF]/60">Status do Prompt</span>
-                  <p className="text-lg font-bold text-emerald-400 mt-1">● Configurado</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                  {/* OpenAI Badge */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProvider('openai');
+                      setActiveProviderText('OpenAI (GPT-4o)');
+                    }}
+                    className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
+                      openaiKey && !openaiKey.includes('xxxx')
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900/40 border-slate-800 text-slate-400'
+                    } ${selectedProvider === 'openai' ? 'ring-2 ring-[#86198F]' : ''}`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className="w-3.5 h-3.5 text-[#FACC15]" />
+                      <span>OpenAI</span>
+                    </div>
+                    {openaiKey && !openaiKey.includes('xxxx') ? (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Salva</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 font-normal">Pendente</span>
+                    )}
+                  </button>
+
+                  {/* Gemini Badge */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProvider('gemini');
+                      setActiveProviderText('Google Gemini (Gratuito)');
+                    }}
+                    className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
+                      geminiKey && !geminiKey.includes('xxxx')
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900/40 border-slate-800 text-slate-400'
+                    } ${selectedProvider === 'gemini' ? 'ring-2 ring-[#86198F]' : ''}`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Google Gemini</span>
+                    </div>
+                    {geminiKey && !geminiKey.includes('xxxx') ? (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Salva</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-emerald-400/80 font-normal">Grátis</span>
+                    )}
+                  </button>
+
+                  {/* NVIDIA NIM Badge */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProvider('nvidia');
+                      setActiveProviderText('NVIDIA NIM (DeepSeek/Llama 3)');
+                    }}
+                    className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
+                      nvidiaKey && !nvidiaKey.includes('xxxx')
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900/40 border-slate-800 text-slate-400'
+                    } ${selectedProvider === 'nvidia' ? 'ring-2 ring-[#86198F]' : ''}`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className="w-3.5 h-3.5 text-green-400" />
+                      <span>NVIDIA NIM</span>
+                    </div>
+                    {nvidiaKey && !nvidiaKey.includes('xxxx') ? (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Salva</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-green-400/80 font-normal">10k Créditos</span>
+                    )}
+                  </button>
+
+                  {/* Anthropic Claude Badge */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProvider('claude');
+                      setActiveProviderText('Anthropic Claude');
+                    }}
+                    className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
+                      claudeKey && !claudeKey.includes('xxxx')
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900/40 border-slate-800 text-slate-400'
+                    } ${selectedProvider === 'claude' ? 'ring-2 ring-[#86198F]' : ''}`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Bot className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Claude</span>
+                    </div>
+                    {claudeKey && !claudeKey.includes('xxxx') ? (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Salva</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 font-normal">Pendente</span>
+                    )}
+                  </button>
+
+                  {/* Custom Provider Badge */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProvider('custom');
+                      setActiveProviderText('Provedor Customizado / Groq');
+                    }}
+                    className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
+                      customKey || customBaseUrl !== 'https://api.groq.com/openai/v1'
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900/40 border-slate-800 text-slate-400'
+                    } ${selectedProvider === 'custom' ? 'ring-2 ring-[#86198F]' : ''}`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Custom / Groq</span>
+                    </div>
+                    {customKey || customBaseUrl ? (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Ativo</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 font-normal">Pendente</span>
+                    )}
+                  </button>
                 </div>
               </div>
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getWhatsAppInstance, saveWhatsAppInstance } from '@/lib/db';
 import { fetchQrCode, sendWhatsAppMessage, getInstanceStatus } from '@/lib/evolution';
+import { generateAIReply } from '@/app/api/ai/chat/route';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -38,55 +39,54 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Evolution API Webhook Event Handler
-    const { event, instance: instanceName, data } = body;
+    // Log incoming webhook event
+    const event = body?.event || body?.type;
+    const instanceName = body?.instance || body?.instanceName || 'socialone_default';
+    const data = body?.data || body;
 
-    console.log(`[Evolution Webhook] Event: ${event} on Instance: ${instanceName}`);
+    console.log(`[Evolution Webhook Received] Event: ${event} on Instance: ${instanceName}`);
 
     // Update connection status
-    if (event === 'connection.update') {
-      const state = data?.state;
+    if (event === 'connection.update' || event === 'CONNECTION_UPDATE') {
+      const state = data?.state || data?.instance?.state;
       if (state) {
         const status = state === 'open' ? 'connected' : state === 'connecting' ? 'connecting' : 'disconnected';
-        await saveWhatsAppInstance(1, { status, phone_number: data?.owner });
+        await saveWhatsAppInstance(1, { status, phone_number: data?.owner || data?.instance?.owner });
       }
     }
 
     // Process Incoming Messages
-    if (event === 'messages.upsert') {
-      const messageObj = data?.message;
-      const remoteJid = data?.key?.remoteJid;
-      const isFromMe = data?.key?.fromMe;
+    if (event === 'messages.upsert' || event === 'MESSAGES_UPSERT' || event === 'messages.update') {
+      const msgObj = Array.isArray(data) ? data[0] : (data?.message ? data : data?.data);
+      
+      const key = msgObj?.key || msgObj?.message?.key;
+      const remoteJid = key?.remoteJid || msgObj?.remoteJid;
+      const isFromMe = key?.fromMe === true || key?.fromMe === 'true';
 
-      // Avoid replying to own messages
-      if (messageObj && remoteJid && !isFromMe) {
-        const text = messageObj?.conversation || messageObj?.extendedTextMessage?.text;
+      // Avoid replying to self / system messages
+      if (remoteJid && !isFromMe && !remoteJid.includes('@g.us')) {
+        const messageContent = msgObj?.message || msgObj;
+        const text = 
+          messageContent?.conversation ||
+          messageContent?.extendedTextMessage?.text ||
+          messageContent?.imageMessage?.caption ||
+          messageContent?.videoMessage?.caption ||
+          messageContent?.documentMessage?.caption;
 
-        if (text) {
-          console.log(`[WhatsApp Incoming] From: ${remoteJid} Text: ${text}`);
+        if (text && text.trim()) {
+          console.log(`[WhatsApp Incoming Message] From: ${remoteJid} -> Text: "${text}"`);
 
-          // Trigger internal AI response processor
-          const host = req.headers.get('host') || 'localhost:3000';
-          const protocol = host.includes('localhost') ? 'http' : 'https';
+          // Directly call AI generation engine with RAG context
+          const aiResult = await generateAIReply({ message: text, userId: 1 });
+          console.log(`[WhatsApp AI Response] Generated via ${aiResult.provider}: "${aiResult.reply.substring(0, 50)}..."`);
 
-          const aiRes = await fetch(`${protocol}://${host}/api/ai/chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text, userId: 1 }),
-          });
-
-          if (aiRes.ok) {
-            const aiData = await aiRes.json();
-            const replyText = aiData.reply;
-
-            // Send back reply via WhatsApp Evolution API
-            await sendWhatsAppMessage(instanceName, remoteJid, replyText);
-          }
+          // Send back answer via WhatsApp Evolution API
+          await sendWhatsAppMessage(instanceName, remoteJid, aiResult.reply);
         }
       }
     }
 
-    return NextResponse.json({ status: 'webhook_received' });
+    return NextResponse.json({ status: 'webhook_processed' });
   } catch (error) {
     console.error('Error handling WhatsApp webhook:', error);
     return NextResponse.json({ error: 'Webhook processing error' }, { status: 500 });
