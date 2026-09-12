@@ -102,7 +102,7 @@ const inMemoryStore = {
     { id: 2, email: "cliente.demo@empresa.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
     { id: 3, email: "contato@lojadetalhes.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 7).toISOString() },
     { id: 4, email: "suporte@techcorp.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 12).toISOString() }
-  ],
+  ] as User[],
   aiKeys: [
     { id: 1, user_id: 1, provider: "openai" as const, encrypted_api_key: "sk-proj-xxxx", updated_at: new Date().toISOString() },
     { id: 2, user_id: 2, provider: "gemini" as const, encrypted_api_key: "AIzaSy-xxxx", updated_at: new Date().toISOString() }
