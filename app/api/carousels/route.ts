@@ -18,61 +18,73 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { userId = 1, topic } = body;
+    const { userId = 1, topic, batchCount = 1 } = body;
 
     if (!topic || !topic.trim()) {
       return NextResponse.json({ error: 'Tema não informado' }, { status: 400 });
     }
 
+    const createdCarousels = [];
+    const count = Math.min(Math.max(1, Number(batchCount)), 5);
+
     // Try AI generation if key is present
     const keys = await getAIKeys(userId);
     const openaiKeyObj = keys.find(k => k.provider === 'openai');
     const plainApiKey = openaiKeyObj ? decryptApiKey(openaiKeyObj.encrypted_api_key) : '';
-    let slidesCount = 5;
 
-    if (plainApiKey) {
-      try {
-        const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${plainApiKey}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              {
-                role: 'system',
-                content: 'Você é um especialista em marketing digital e criação de carrosséis engajadores para o Instagram.'
-              },
-              {
-                role: 'user',
-                content: `Gere 5 tópicos/slides para um carrossel do Instagram sobre: ${topic}. Retorne apenas texto resumido.`
-              }
-            ],
-            temperature: 0.7,
-          }),
-        });
-        if (aiRes.ok) {
-          slidesCount = 5;
+    for (let i = 0; i < count; i++) {
+      const carouselTopic = count > 1 ? `${topic.trim()} (Variação ${i + 1})` : topic.trim();
+      let slidesCount = 5;
+
+      if (plainApiKey) {
+        try {
+          const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${plainApiKey}`,
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                {
+                  role: 'system',
+                  content: 'Você é um estrategista de conteúdo para Instagram. Responda ESTRITAMENTE em formato JSON contendo a estrutura do carrossel.'
+                },
+                {
+                  role: 'user',
+                  content: `Gere uma estrutura de carrossel de 5 slides para o Instagram sobre: "${carouselTopic}". Formato esperado JSON: {"title": "${carouselTopic}", "slides": [{"slide": 1, "title": "...", "description": "..."}]}`
+                }
+              ],
+              response_format: { type: 'json_object' },
+              temperature: 0.7,
+            }),
+          });
+          if (aiRes.ok) {
+            slidesCount = 5;
+          }
+        } catch (err) {
+          console.warn('AI Carousel generation fallback:', err);
         }
-      } catch (err) {
-        console.warn('AI Carousel generation fallback:', err);
+      }
+
+      const newCarousel = {
+        user_id: userId,
+        title: carouselTopic,
+        slides_count: slidesCount,
+        date: 'Hoje'
+      };
+
+      const res = await saveCarousel(newCarousel);
+      if (res.carousel) {
+        createdCarousels.push(res.carousel);
       }
     }
 
-    const newCarousel = {
-      user_id: userId,
-      title: topic.trim(),
-      slides_count: slidesCount,
-      date: 'Hoje'
-    };
-
-    const res = await saveCarousel(newCarousel);
-
     return NextResponse.json({
       success: true,
-      carousel: res.carousel
+      carousels: createdCarousels,
+      carousel: createdCarousels[0]
     });
   } catch (error) {
     console.error('Error creating carousel:', error);
