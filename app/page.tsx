@@ -107,37 +107,37 @@ export default function LandingPage() {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1.5 bg-slate-900/60 p-1.5 rounded-2xl border border-white/5 backdrop-blur-md">
-            <a
-              href="#planos"
+            <Link
+              href="/planos"
               className="px-4 py-2 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-brand-amber via-yellow-400 to-amber-500 hover:brightness-110 transition-all flex items-center space-x-1.5 shadow-md shadow-brand-amber/20"
             >
               <Sparkles className="w-3.5 h-3.5 text-slate-950 fill-slate-950" />
               <span>Planos SaaS ✨</span>
-            </a>
-            <a
-              href="#recursos"
+            </Link>
+            <Link
+              href="/recursos"
               className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all"
             >
               Recursos
-            </a>
-            <a
-              href="#byoai"
+            </Link>
+            <Link
+              href="/byoai"
               className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all"
             >
               Modelo BYOAI
-            </a>
-            <a
-              href="#rag"
+            </Link>
+            <Link
+              href="/rag"
               className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all"
             >
               Base de Conhecimento
-            </a>
-            <a
-              href="#whatsapp"
+            </Link>
+            <Link
+              href="/whatsapp"
               className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all"
             >
               WhatsApp API
-            </a>
+            </Link>
           </nav>
 
           {/* Header Action Buttons */}
@@ -172,8 +172,8 @@ export default function LandingPage() {
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
           <div className="lg:hidden mt-3 p-4 bg-slate-900/95 border border-brand-violet/30 rounded-2xl backdrop-blur-2xl shadow-2xl flex flex-col space-y-3 animate-fadeIn">
-            <a
-              href="#planos"
+            <Link
+              href="/planos"
               onClick={() => setMobileMenuOpen(false)}
               className="px-4 py-3 rounded-xl text-sm font-extrabold text-slate-950 bg-gradient-to-r from-brand-amber to-yellow-400 flex items-center justify-between shadow-md"
             >
@@ -184,35 +184,35 @@ export default function LandingPage() {
               <span className="text-[10px] px-2 py-0.5 bg-slate-950 text-brand-amber rounded-full font-bold uppercase">
                 Ver Preços
               </span>
-            </a>
-            <a
-              href="#recursos"
+            </Link>
+            <Link
+              href="/recursos"
               onClick={() => setMobileMenuOpen(false)}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/5 transition-colors"
             >
               Recursos
-            </a>
-            <a
-              href="#byoai"
+            </Link>
+            <Link
+              href="/byoai"
               onClick={() => setMobileMenuOpen(false)}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/5 transition-colors"
             >
               Modelo BYOAI
-            </a>
-            <a
-              href="#rag"
+            </Link>
+            <Link
+              href="/rag"
               onClick={() => setMobileMenuOpen(false)}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/5 transition-colors"
             >
               Base de Conhecimento
-            </a>
-            <a
-              href="#whatsapp"
+            </Link>
+            <Link
+              href="/whatsapp"
               onClick={() => setMobileMenuOpen(false)}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/5 transition-colors"
             >
               WhatsApp API
-            </a>
+            </Link>
 
             <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
               <button
@@ -234,7 +234,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-20 pb-24 px-6 max-w-7xl mx-auto text-center flex flex-col items-center justify-center">
+      <section id="recursos" className="relative pt-20 pb-24 px-6 max-w-7xl mx-auto text-center flex flex-col items-center justify-center">
         <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-brand-violet/20 border border-brand-violet/40 text-brand-lavender text-xs font-semibold mb-8 animate-pulse">
           <Sparkles className="w-4 h-4 text-brand-amber" />
           <span>Plataforma Autêntica de IA Corporativa com BYOAI</span>
@@ -270,7 +270,7 @@ export default function LandingPage() {
 
         {/* Feature Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl text-left">
-          <div className="glass-card p-6 rounded-2xl">
+          <div id="byoai" className="glass-card p-6 rounded-2xl">
             <div className="w-12 h-12 rounded-xl bg-brand-violet/20 border border-brand-violet/40 flex items-center justify-center mb-4">
               <Key className="w-6 h-6 text-brand-amber" />
             </div>
@@ -280,7 +280,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="glass-card p-6 rounded-2xl">
+          <div id="whatsapp" className="glass-card p-6 rounded-2xl">
             <div className="w-12 h-12 rounded-xl bg-brand-magenta/20 border border-brand-magenta/40 flex items-center justify-center mb-4">
               <MessageSquare className="w-6 h-6 text-brand-lavender" />
             </div>
@@ -290,7 +290,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="glass-card p-6 rounded-2xl">
+          <div id="rag" className="glass-card p-6 rounded-2xl">
             <div className="w-12 h-12 rounded-xl bg-brand-amber/20 border border-brand-amber/40 flex items-center justify-center mb-4">
               <FileText className="w-6 h-6 text-brand-amber" />
             </div>
