@@ -24,6 +24,19 @@ export function getEvolutionApiKey(): string {
 }
 
 /**
+ * Helper to ensure a base64 string is formatted properly as an image data URI.
+ */
+function formatQrCodeBase64(rawQr?: string): string | undefined {
+  if (!rawQr) return undefined;
+  if (rawQr.startsWith('data:image')) return rawQr;
+  // If raw base64 string without data URI scheme
+  if (rawQr.length > 100) {
+    return `data:image/png;base64,${rawQr}`;
+  }
+  return rawQr;
+}
+
+/**
  * Tests connection & health of your Evolution API VPS / Easypanel.
  */
 export async function testVpsConnection(customUrl?: string, customKey?: string): Promise<{ online: boolean; version?: string; message: string }> {
@@ -35,6 +48,7 @@ export async function testVpsConnection(customUrl?: string, customKey?: string):
     const res = await fetch(`${baseUrl}/instance/fetchInstances`, {
       method: 'GET',
       headers: { 'apikey': apiKey },
+      cache: 'no-store',
     });
 
     if (res.ok) {
@@ -42,7 +56,7 @@ export async function testVpsConnection(customUrl?: string, customKey?: string):
       return {
         online: true,
         version: 'v2.0 (Easypanel)',
-        message: `Evolution API conectada com sucesso em ${baseUrl}! ${Array.isArray(data) ? data.length : 0} instâncias encontradas.`,
+        message: `Evolution API conectada com sucesso em ${baseUrl}! ${Array.isArray(data) ? data.length : 0} instâncias ativas no servidor.`,
       };
     } else {
       return {
@@ -91,12 +105,13 @@ export async function registerVpsWebhook(instanceName: string, webhookUrl: strin
 /**
  * Creates or fetches a WhatsApp instance on your Easypanel Evolution API.
  */
-export async function getOrCreateInstance(instanceName: string): Promise<EvolutionInstanceInfo> {
+export async function getOrCreateInstance(instanceName: string = 'socialone_default'): Promise<EvolutionInstanceInfo> {
   const baseUrl = getEvolutionBaseUrl();
   const apiKey = getEvolutionApiKey();
 
   try {
-    const res = await fetch(`${baseUrl}/instance/create`, {
+    // 1. Try creating instance first
+    const createRes = await fetch(`${baseUrl}/instance/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -108,20 +123,23 @@ export async function getOrCreateInstance(instanceName: string): Promise<Evoluti
         qrcode: true,
         integration: 'WHATSAPP-BAILEYS',
       }),
+      cache: 'no-store',
     });
 
-    if (res.ok) {
-      const data = await res.json();
+    if (createRes.ok) {
+      const data = await createRes.json();
+      const rawQr = data?.qrcode?.base64 || data?.qrcode?.code || data?.base64 || data?.code;
       return {
         instanceName,
         status: data?.instance?.status === 'open' ? 'connected' : 'connecting',
-        qrcode: data?.qrcode?.base64 || data?.qrcode?.code,
+        qrcode: formatQrCodeBase64(rawQr),
       };
     }
 
+    // 2. If instance already exists, check status
     return await getInstanceStatus(instanceName);
   } catch (error) {
-    console.warn('Evolution API offline or in fallback mode:', error);
+    console.warn('Evolution API create instance warning:', error);
     return {
       instanceName,
       status: 'disconnected',
@@ -132,13 +150,14 @@ export async function getOrCreateInstance(instanceName: string): Promise<Evoluti
 /**
  * Checks connection status of an instance on the Easypanel Evolution API.
  */
-export async function getInstanceStatus(instanceName: string): Promise<EvolutionInstanceInfo> {
+export async function getInstanceStatus(instanceName: string = 'socialone_default'): Promise<EvolutionInstanceInfo> {
   const baseUrl = getEvolutionBaseUrl();
   const apiKey = getEvolutionApiKey();
 
   try {
     const res = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
       headers: { 'apikey': apiKey },
+      cache: 'no-store',
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -160,39 +179,48 @@ export async function getInstanceStatus(instanceName: string): Promise<Evolution
 }
 
 /**
- * Fetches current QR code for pairing from Easypanel Evolution API.
+ * Fetches current real QR code for pairing from Easypanel Evolution API.
  */
-export async function fetchQrCode(instanceName: string): Promise<{ qrcode?: string; status: string }> {
+export async function fetchQrCode(instanceName: string = 'socialone_default'): Promise<{ qrcode?: string; status: string }> {
   const baseUrl = getEvolutionBaseUrl();
   const apiKey = getEvolutionApiKey();
 
   try {
+    // Ensure instance is created first on Easypanel
+    await getOrCreateInstance(instanceName);
+
+    // Call connect endpoint on Evolution API v2
     const res = await fetch(`${baseUrl}/instance/connect/${instanceName}`, {
       headers: { 'apikey': apiKey },
+      cache: 'no-store',
     });
 
     if (res.ok) {
       const data = await res.json();
-      return {
-        qrcode: data?.base64 || data?.code || data?.qrcode?.base64,
-        status: 'connecting',
-      };
+      const rawQr = data?.base64 || data?.code || data?.qrcode?.base64 || data?.qrcode?.code;
+      if (rawQr) {
+        return {
+          qrcode: formatQrCodeBase64(rawQr),
+          status: 'connecting',
+        };
+      }
     }
   } catch (error) {
-    console.warn('QR Code fetch error:', error);
+    console.warn('Error fetching live QR code from Easypanel:', error);
   }
 
-  // Fallback SVG QR Code preview
+  // If connection fails, fetch status
+  const statusInfo = await getInstanceStatus(instanceName);
   return {
-    status: 'connecting',
-    qrcode: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220" fill="none"><rect width="220" height="220" fill="%230F172A" rx="16"/><rect x="20" y="20" width="60" height="60" fill="%237C3AED"/><rect x="30" y="30" width="40" height="40" fill="%230F172A"/><rect x="40" y="40" width="20" height="20" fill="%23FACC15"/><rect x="140" y="20" width="60" height="60" fill="%237C3AED"/><rect x="150" y="30" width="40" height="40" fill="%230F172A"/><rect x="160" y="40" width="20" height="20" fill="%23FACC15"/><rect x="20" y="140" width="60" height="60" fill="%237C3AED"/><rect x="30" y="150" width="40" height="40" fill="%230F172A"/><rect x="40" y="160" width="20" height="20" fill="%23FACC15"/><rect x="100" y="30" width="20" height="30" fill="%23E9D5FF"/><rect x="100" y="80" width="30" height="20" fill="%239333EA"/><rect x="140" y="120" width="40" height="40" fill="%23FACC15"/><rect x="100" y="150" width="20" height="40" fill="%237C3AED"/><text x="110" y="205" fill="%23E9D5FF" font-size="10" text-anchor="middle" font-family="sans-serif">Easypanel Evolution QR Code</text></svg>`,
+    status: statusInfo.status,
+    qrcode: undefined,
   };
 }
 
 /**
  * Sends a text message via WhatsApp using the Easypanel Evolution API.
  */
-export async function sendWhatsAppMessage(instanceName: string, remoteJid: string, text: string) {
+export async function sendWhatsAppMessage(instanceName: string = 'socialone_default', remoteJid: string, text: string) {
   const baseUrl = getEvolutionBaseUrl();
   const apiKey = getEvolutionApiKey();
 

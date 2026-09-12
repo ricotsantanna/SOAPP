@@ -8,11 +8,15 @@ export async function GET(req: Request) {
   const userId = Number(searchParams.get('userId') || 1);
 
   const instance = await getWhatsAppInstance(userId);
-  const instanceName = instance?.instance_name || 'socialone_inst';
+  const instanceName = instance?.instance_name || 'socialone_default';
 
   if (action === 'qrcode') {
     const qrData = await fetchQrCode(instanceName);
-    return NextResponse.json(qrData);
+    return NextResponse.json(qrData, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0, must-revalidate',
+      },
+    });
   }
 
   if (action === 'status') {
@@ -20,7 +24,11 @@ export async function GET(req: Request) {
     if (instance) {
       await saveWhatsAppInstance(userId, { status: statusData.status, phone_number: statusData.phone });
     }
-    return NextResponse.json(statusData);
+    return NextResponse.json(statusData, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0, must-revalidate',
+      },
+    });
   }
 
   return NextResponse.json({ instance, instanceName });
