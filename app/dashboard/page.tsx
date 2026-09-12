@@ -944,7 +944,7 @@ export default function DashboardMasterWorkspace() {
                     } ${selectedProvider === 'custom' ? 'ring-2 ring-[#86198F]' : ''}`}
                   >
                     <div className="flex items-center space-x-2">
-                      <Cpu className="w-3.5 h-3.5 text-purple-400" />
+                      <Globe className="w-3.5 h-3.5 text-purple-400" />
                       <span>Custom / Groq</span>
                     </div>
                     {savedKeys.custom ? (
