@@ -20,7 +20,8 @@ import {
   Plus,
   Trash2,
   FileText,
-  Globe
+  Globe,
+  AlertCircle
 } from 'lucide-react';
 
 export default function DashboardMasterWorkspace() {
@@ -30,7 +31,10 @@ export default function DashboardMasterWorkspace() {
   const [waStatus, setWaStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connected');
   const [waMessagesCount, setWaMessagesCount] = useState(1248);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [qrLoading, setQrLoading] = useState(false);
+
   const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([
     { sender: 'ai', text: 'Olá! Sou o atendente virtual do WhatsApp da Social One. Como posso te ajudar?' }
   ]);
@@ -93,12 +97,23 @@ export default function DashboardMasterWorkspace() {
 
   const handleFetchQr = async () => {
     setShowQrModal(true);
+    setQrLoading(true);
+    setQrError(null);
     try {
-      const res = await fetch('/api/whatsapp?action=qrcode');
+      const res = await fetch('/api/whatsapp?action=qrcode', { cache: 'no-store' });
       const data = await res.json();
-      setQrCodeData(data.qrcode || null);
-    } catch (error) {
-      console.error('QR Error:', error);
+      if (data.qrcode) {
+        setQrCodeData(data.qrcode);
+      } else if (data.error) {
+        setQrError(data.error);
+      } else {
+        setQrError('Carregando QR Code da Evolution API no Easypanel...');
+      }
+    } catch (error: any) {
+      console.error('QR Fetch Error:', error);
+      setQrError('Erro de comunicação com a Evolution API.');
+    } finally {
+      setQrLoading(false);
     }
   };
 
@@ -236,7 +251,7 @@ export default function DashboardMasterWorkspace() {
                     <span>Gerenciar Instância</span>
                   </button>
 
-                  <span className="text-xs text-[#E9D5FF]/70 font-mono">Evolution API v2.0</span>
+                  <span className="text-xs text-[#E9D5FF]/70 font-mono">Easypanel Host</span>
                 </div>
 
                 {/* Live Simulator Chat Box */}
@@ -640,19 +655,32 @@ export default function DashboardMasterWorkspace() {
 
       {/* MODAL: QR CODE PAIRING */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="bg-[#111936] border border-[#581C87]/40 p-6 rounded-3xl max-w-sm w-full text-center space-y-4 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-[#111936] border border-[#581C87]/40 p-6 rounded-3xl max-w-sm w-full text-center space-y-4 relative shadow-2xl">
             <button onClick={() => setShowQrModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
             <h3 className="font-bold text-white text-base">Pareamento WhatsApp Business</h3>
             <p className="text-xs text-slate-400">Escaneie o QR Code com seu WhatsApp para conectar a Evolution API</p>
-            <div className="w-56 h-56 bg-slate-950 mx-auto rounded-2xl border border-slate-800 p-2 flex items-center justify-center">
-              {qrCodeData ? (
-                <img src={qrCodeData} alt="QR Code" className="w-full h-full object-contain rounded-lg" />
+            
+            <div className="w-56 h-56 bg-slate-950 mx-auto rounded-2xl border border-slate-800 p-2 flex items-center justify-center relative overflow-hidden">
+              {qrLoading ? (
+                <div className="flex flex-col items-center space-y-2 text-[#FACC15]">
+                  <RefreshCw className="w-8 h-8 animate-spin" />
+                  <span className="text-xs font-semibold">Gerando QR Code na Evolution API...</span>
+                </div>
+              ) : qrCodeData ? (
+                <img src={qrCodeData} alt="QR Code WhatsApp" className="w-full h-full object-contain rounded-lg" />
               ) : (
-                <div className="text-xs text-[#FACC15]">Gerando QR Code...</div>
+                <div className="p-4 text-center space-y-2">
+                  <AlertCircle className="w-6 h-6 text-[#FACC15] mx-auto" />
+                  <div className="text-xs text-slate-300">{qrError || 'Aguardando geração do QR Code...'}</div>
+                  <button onClick={handleFetchQr} className="text-xs font-bold text-[#FACC15] hover:underline">
+                    Tentar Novamente
+                  </button>
+                </div>
               )}
             </div>
-            <button onClick={() => setShowQrModal(false)} className="w-full py-2 bg-[#FACC15] text-slate-950 font-bold rounded-xl text-xs">
+
+            <button onClick={() => setShowQrModal(false)} className="w-full py-2.5 bg-[#FACC15] text-slate-950 font-bold rounded-xl text-xs hover:bg-[#FDE047]">
               Concluído
             </button>
           </div>
