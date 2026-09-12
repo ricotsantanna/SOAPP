@@ -46,9 +46,9 @@ const InstagramBrandIcon = ({ className = "w-5 h-5" }: { className?: string }) =
 );
 
 export default function DashboardMasterWorkspace() {
-  const [active, setActive] = useState<'whatsapp' | 'instagram' | 'knowledge' | 'settings'>('whatsapp');
+  const [active, setActive] = useState<'whatsapp' | 'agenda' | 'instagram' | 'knowledge' | 'settings'>('whatsapp');
   const [businessModel, setBusinessModel] = useState<'service' | 'retail' | null>(null);
-  const [userPlan, setUserPlan] = useState<'start' | 'agenda' | 'social' | 'max'>('start');
+  const [userPlan, setUserPlan] = useState<'start' | 'agenda' | 'social' | 'max'>('max');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -671,8 +671,8 @@ export default function DashboardMasterWorkspace() {
         onClick={() => setActive('whatsapp')} 
         className={`relative transition-all duration-500 ease-in-out border-r border-slate-800/80 flex flex-col justify-between overflow-hidden ${
           active === 'whatsapp' 
-            ? 'flex-[5] bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40' 
-            : 'flex-[1] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer'
+            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[320px]' 
+            : 'w-14 min-w-[56px] max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-6'
         }`}
       >
         {active === 'whatsapp' && (
@@ -680,42 +680,38 @@ export default function DashboardMasterWorkspace() {
         )}
 
         {/* Column Header */}
-        <div className="p-6 flex items-center justify-between border-b border-slate-800/60 shrink-0">
-          <div className="flex items-center space-x-3 overflow-hidden">
-            <div className={`p-2.5 rounded-xl transition-colors ${
-              active === 'whatsapp' 
-                ? 'bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/40 shadow-lg shadow-emerald-950/50' 
-                : 'bg-[#151D3B] text-[#25D366]'
-            }`}>
-              <WhatsAppBrandIcon className="w-5 h-5 text-[#25D366]" />
+        {active === 'whatsapp' ? (
+          <div className="p-6 flex items-center justify-between border-b border-slate-800/60 shrink-0">
+            <div className="flex items-center space-x-3 overflow-hidden">
+              <div className="p-2.5 rounded-xl bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/40 shadow-lg shadow-emerald-950/50">
+                <WhatsAppBrandIcon className="w-5 h-5 text-[#25D366]" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold tracking-wide text-white">WhatsApp</h2>
+                <p className="text-xs text-[#E9D5FF]">Atendimento IA & Instâncias</p>
+              </div>
+              <div className="flex items-center space-x-2 ml-4">
+                <div className="px-3 py-1 rounded-full bg-[#86198F]/20 border border-[#86198F]/40 text-[#E9D5FF] text-xs font-bold capitalize">
+                  Plano {userPlan}
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowUpgradeModal(true); }}
+                  className="px-3 py-1 rounded-full bg-[#FACC15] text-slate-950 text-xs font-extrabold hover:bg-[#FDE047] transition-all flex items-center space-x-1"
+                >
+                  <Sparkles className="w-3 h-3 text-slate-950" />
+                  <span>Upgrade</span>
+                </button>
+              </div>
             </div>
-            {active === 'whatsapp' && (
-              <>
-                <div>
-                  <h2 className="text-lg font-bold tracking-wide text-white">WhatsApp</h2>
-                  <p className="text-xs text-[#E9D5FF]">Atendimento IA & Instâncias</p>
-                </div>
-                <div className="flex items-center space-x-2 ml-4">
-                  <div className="px-3 py-1 rounded-full bg-[#86198F]/20 border border-[#86198F]/40 text-[#E9D5FF] text-xs font-bold capitalize">
-                    Plano {userPlan}
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setShowUpgradeModal(true); }}
-                    className="px-3 py-1 rounded-full bg-[#FACC15] text-slate-950 text-xs font-extrabold hover:bg-[#FDE047] transition-all flex items-center space-x-1"
-                  >
-                    <Sparkles className="w-3 h-3 text-slate-950" />
-                    <span>Upgrade</span>
-                  </button>
-                </div>
-              </>
-            )}
           </div>
-          {active !== 'whatsapp' && (
-            <span className="text-xs font-semibold text-[#E9D5FF]/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase">
+        ) : (
+          <div className="flex flex-col items-center space-y-4 my-auto">
+            <WhatsAppBrandIcon className="w-5 h-5 text-[#25D366]" />
+            <span className="text-xs font-semibold text-[#E9D5FF]/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase truncate max-h-[200px]">
               WhatsApp
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Column Inner Content */}
         <div className="flex-1 p-6 overflow-y-auto">
@@ -867,58 +863,57 @@ export default function DashboardMasterWorkspace() {
       </div>
 
 
-      {/* 2. INSTAGRAM COLUMN */}
+      {/* 2. AGENDA & CRM COLUMN */}
       <div 
-        onClick={() => setActive('instagram')} 
+        onClick={() => setActive('agenda')} 
         className={`relative transition-all duration-500 ease-in-out border-r border-slate-800/80 flex flex-col justify-between overflow-hidden ${
-          active === 'instagram' 
-            ? 'flex-[5] bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40' 
-            : 'flex-[1] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer'
+          active === 'agenda' 
+            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[320px]' 
+            : 'w-14 min-w-[56px] max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-6'
         }`}
       >
-        {active === 'instagram' && (
+        {active === 'agenda' && (
           <div className="absolute top-0 left-0 right-0 h-1 bg-[#FACC15]" />
         )}
 
         {/* Column Header */}
-        <div className="p-6 flex items-center justify-between border-b border-slate-800/60 shrink-0">
-          <div className="flex items-center space-x-3 overflow-hidden">
-            <div className={`p-2.5 rounded-xl transition-colors ${
-              active === 'instagram' 
-                ? 'bg-[#86198F] text-white shadow-lg shadow-magenta-950/50' 
-                : 'bg-[#151D3B] text-[#FACC15]'
-            }`}>
-              {businessModel === 'service' ? (
-                <Calendar className="w-5 h-5 text-[#FACC15]" />
-              ) : businessModel === 'retail' ? (
-                <ShoppingBag className="w-5 h-5 text-[#FACC15]" />
-              ) : (
-                <InstagramBrandIcon className="w-5 h-5 text-[#E1306C]" />
-              )}
-            </div>
-            {active === 'instagram' && (
+        {active === 'agenda' ? (
+          <div className="p-6 flex items-center justify-between border-b border-slate-800/60 shrink-0">
+            <div className="flex items-center space-x-3 overflow-hidden">
+              <div className="p-2.5 rounded-xl bg-[#FACC15]/20 text-[#FACC15] border border-[#FACC15]/40 shadow-lg shadow-amber-950/50">
+                {businessModel === 'service' ? (
+                  <Calendar className="w-5 h-5 text-[#FACC15]" />
+                ) : (
+                  <ShoppingBag className="w-5 h-5 text-[#FACC15]" />
+                )}
+              </div>
               <div>
                 <h2 className="text-lg font-bold tracking-wide text-white">
-                  {businessModel === 'service' ? 'Agenda Inteligente' : businessModel === 'retail' ? 'CRM & Vendas' : 'Instagram'}
+                  {businessModel === 'service' ? 'Agenda Inteligente' : 'CRM & Vendas'}
                 </h2>
                 <p className="text-xs text-[#E9D5FF]">
-                  {businessModel === 'service' ? 'Google Calendar (SSOT)' : businessModel === 'retail' ? 'Dashboard Financeiro & KPIs' : 'Automação & Carrosséis'}
+                  {businessModel === 'service' ? 'Google Calendar (SSOT)' : 'Dashboard Financeiro & KPIs'}
                 </p>
               </div>
-            )}
+            </div>
           </div>
-          {active !== 'instagram' && (
-            <span className="text-xs font-semibold text-[#E9D5FF]/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase">
-              {businessModel === 'service' ? 'Agenda' : businessModel === 'retail' ? 'Vendas & CRM' : 'Instagram'}
+        ) : (
+          <div className="flex flex-col items-center space-y-4 my-auto">
+            {businessModel === 'service' ? (
+              <Calendar className="w-5 h-5 text-[#FACC15]" />
+            ) : (
+              <ShoppingBag className="w-5 h-5 text-[#FACC15]" />
+            )}
+            <span className="text-xs font-semibold text-[#E9D5FF]/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase truncate max-h-[200px]">
+              {businessModel === 'service' ? 'AGENDA SSOT' : 'VENDAS & CRM'}
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Column Inner Content */}
         <div className="flex-1 p-6 overflow-y-auto">
-          {active === 'instagram' && (
+          {active === 'agenda' && (
             <div className="space-y-6 max-w-4xl">
-              
               {/* SERVICE VIEW: Agenda Inteligente */}
               {businessModel === 'service' && (
                 <>
@@ -1028,23 +1023,23 @@ export default function DashboardMasterWorkspace() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="p-4 rounded-xl bg-[#090E22] border border-slate-800 space-y-2">
                         <span className="text-xs font-bold text-[#FACC15] flex items-center justify-between">
-                          <span>Qualificados pela IA</span>
-                          <span className="px-2 py-0.5 rounded bg-[#FACC15]/10 text-[10px]">5</span>
+                          <span>Novos Leads WhatsApp</span>
+                          <span className="px-2 py-0.5 rounded bg-[#FACC15]/10 text-[10px]">14</span>
                         </span>
-                        <div className="p-3 rounded-lg bg-[#111936] border border-slate-800 text-xs">
-                          <span className="font-bold text-white block">Kit Promoção Verão</span>
-                          <span className="text-[10px] text-[#E9D5FF]/60 block font-mono mt-0.5">(11) 99123-4567 • R$ 390,00</span>
+                        <div className="p-3 rounded-lg bg-[#111936] border border-slate-800 text-xs space-y-1">
+                          <span className="font-bold text-white block">Rodrigo Alves</span>
+                          <span className="text-[10px] text-slate-400 block">Interesse: Orçamento Serviços</span>
                         </div>
                       </div>
 
                       <div className="p-4 rounded-xl bg-[#090E22] border border-slate-800 space-y-2">
-                        <span className="text-xs font-bold text-amber-400 flex items-center justify-between">
-                          <span>Aguardando Pagamento</span>
-                          <span className="px-2 py-0.5 rounded bg-amber-400/10 text-[10px]">3</span>
+                        <span className="text-xs font-bold text-purple-400 flex items-center justify-between">
+                          <span>Em Atendimento IA</span>
+                          <span className="px-2 py-0.5 rounded bg-purple-400/10 text-[10px]">6</span>
                         </span>
-                        <div className="p-3 rounded-lg bg-[#111936] border border-slate-800 text-xs">
-                          <span className="font-bold text-white block">Pedido #1089 - PIX</span>
-                          <span className="text-[10px] text-[#E9D5FF]/60 block font-mono mt-0.5">(11) 98765-4321 • R$ 520,00</span>
+                        <div className="p-3 rounded-lg bg-[#111936] border border-slate-800 text-xs space-y-1">
+                          <span className="font-bold text-white block">Juliana Paes</span>
+                          <span className="text-[10px] text-slate-400 block">Aguardando confirmação de dados</span>
                         </div>
                       </div>
 
@@ -1053,7 +1048,7 @@ export default function DashboardMasterWorkspace() {
                           <span>Vendas Concluídas</span>
                           <span className="px-2 py-0.5 rounded bg-emerald-400/10 text-[10px]">8</span>
                         </span>
-                        <div className="p-3 rounded-lg bg-[#111936] border border-slate-800 text-xs">
+                        <div className="p-3 rounded-lg bg-[#111936] border border-slate-800 text-xs space-y-1">
                           <span className="font-bold text-white block">Combo Varejo Premium</span>
                           <span className="text-[10px] text-[#E9D5FF]/60 block font-mono mt-0.5">(11) 97777-1111 • R$ 540,00</span>
                         </div>
@@ -1062,67 +1057,6 @@ export default function DashboardMasterWorkspace() {
                   </div>
                 </>
               )}
-
-              {/* DEFAULT VIEW: Carrosséis IA / Instagram */}
-              {!businessModel && (
-                <>
-                  <div className="p-6 rounded-2xl bg-[#111936] border border-[#86198F]/30 backdrop-blur-sm">
-                    <h3 className="text-sm font-medium text-[#FACC15] uppercase tracking-wider mb-2">
-                      Painel de Criação — Carrosséis IA
-                    </h3>
-                    <p className="text-sm text-[#E9D5FF]/80 leading-relaxed">
-                      Gere conteúdos estruturados em slides com base nos dados da empresa e aprove rascunhos antes da publicação.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
-                      <span className="text-xs text-[#E9D5FF]/60">Posts Pendentes</span>
-                      <p className="text-lg font-bold text-[#FACC15] mt-1">{carousels.length} Rascunhos</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
-                      <span className="text-xs text-[#E9D5FF]/60">Publicados no Mês</span>
-                      <p className="text-lg font-bold text-[#E9D5FF] mt-1">14 Posts</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <button 
-                      onClick={() => setShowCarouselModal(true)}
-                      className="px-5 py-2.5 rounded-xl bg-[#FACC15] text-slate-950 font-bold text-sm hover:bg-[#FDE047] transition-colors shadow-lg shadow-[#FACC15]/10 flex items-center space-x-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Criar Novo Carrossel</span>
-                    </button>
-
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rascunhos Recentes de Carrossel</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {carousels.map((c) => (
-                          <div key={c.id} className="p-4 rounded-xl bg-[#111936] border border-slate-800 flex items-center justify-between">
-                            <div>
-                              <h5 className="font-bold text-sm text-white truncate max-w-[200px]">{c.title}</h5>
-                              <span className="text-xs text-[#E9D5FF]/60">{c.slidesCount} Slides • {c.date}</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-[10px] font-bold px-2 py-1 rounded bg-[#86198F]/20 text-[#E9D5FF] border border-[#86198F]/40">
-                                PRONTO
-                              </span>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleDeleteCarousel(c.id); }}
-                                className="text-slate-500 hover:text-red-400 p-1"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
             </div>
           )}
         </div>
@@ -1134,13 +1068,160 @@ export default function DashboardMasterWorkspace() {
       </div>
 
 
-      {/* 3. BASE DE CONHECIMENTO COLUMN */}
+      {/* 3. INSTAGRAM COLUMN */}
+      <div 
+        onClick={() => setActive('instagram')} 
+        className={`relative transition-all duration-500 ease-in-out border-r border-slate-800/80 flex flex-col justify-between overflow-hidden ${
+          active === 'instagram' 
+            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[320px]' 
+            : userPlan === 'start'
+              ? 'w-14 min-w-[56px] max-w-[56px] bg-[#060914] opacity-70 hover:opacity-100 cursor-pointer items-center py-6 border-r border-slate-800/60'
+              : 'w-14 min-w-[56px] max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-6'
+        }`}
+      >
+        {active === 'instagram' && (
+          <div className="absolute top-0 left-0 right-0 h-1 bg-[#E1306C]" />
+        )}
+
+        {/* Column Header */}
+        {active === 'instagram' ? (
+          <div className="p-6 flex items-center justify-between border-b border-slate-800/60 shrink-0">
+            <div className="flex items-center space-x-3 overflow-hidden">
+              <div className="p-2.5 rounded-xl bg-[#86198F] text-white shadow-lg shadow-magenta-950/50">
+                <InstagramBrandIcon className="w-5 h-5 text-[#E1306C]" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold tracking-wide text-white">Instagram & Carrosséis IA</h2>
+                <p className="text-xs text-[#E9D5FF]">Automação, Posts & Direct DMs</p>
+              </div>
+            </div>
+            {userPlan === 'start' && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowUpgradeModal(true); }}
+                className="px-3 py-1 rounded-full bg-[#86198F]/30 border border-[#86198F]/50 text-xs font-bold text-[#E9D5FF] hover:bg-[#86198F]/50 flex items-center space-x-1"
+              >
+                <Lock className="w-3 h-3 text-[#FACC15]" />
+                <span>Ativar no Plano Social</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center space-y-4 my-auto">
+            <InstagramBrandIcon className={`w-5 h-5 ${userPlan === 'start' ? 'text-slate-500' : 'text-[#E1306C]'}`} />
+            <span className={`text-xs font-semibold [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase truncate max-h-[200px] ${
+              userPlan === 'start' ? 'text-slate-500' : 'text-[#E9D5FF]/60'
+            }`}>
+              {userPlan === 'start' ? 'INSTAGRAM (STARTER)' : 'INSTAGRAM'}
+            </span>
+            {userPlan === 'start' && <Lock className="w-3.5 h-3.5 text-slate-500 mt-1" />}
+          </div>
+        )}
+
+        {/* Column Inner Content */}
+        <div className="flex-1 p-6 overflow-y-auto">
+          {active === 'instagram' && (
+            <div className="space-y-6 max-w-4xl">
+              {/* Starter Plan Lock Notice */}
+              {userPlan === 'start' && (
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-amber-300">Recurso do Plano Social One (R$ 199/mês)</h4>
+                      <p className="text-[11px] text-amber-200/80">O Plano Starter contempla automação via WhatsApp. Faça upgrade para conectar a Graph API do Instagram e Direct DMs.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowUpgradeModal(true)}
+                    className="px-4 py-2 rounded-xl bg-[#FACC15] text-slate-950 font-bold text-xs hover:bg-[#FDE047] shrink-0"
+                  >
+                    Fazer Upgrade
+                  </button>
+                </div>
+              )}
+
+              {/* Instância Instagram DM Graph API */}
+              <div className="p-6 rounded-2xl bg-[#111936] border border-[#86198F]/30 backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-bold text-[#FACC15] uppercase tracking-wider">
+                    Instância Instagram DM (Meta Graph API)
+                  </h3>
+                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    CONECTADO (GRAPH API v19.0)
+                  </span>
+                </div>
+                <p className="text-sm text-[#E9D5FF]/80 leading-relaxed">
+                  Responda directs, comentários e reações em stories do Instagram com a mesma inteligência artificial e base de conhecimento.
+                </p>
+              </div>
+
+              {/* Carrosséis & Posts Estúdio */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                  <span className="text-xs text-[#E9D5FF]/60">Posts Pendentes</span>
+                  <p className="text-lg font-bold text-[#FACC15] mt-1">{carousels.length} Rascunhos</p>
+                </div>
+                <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                  <span className="text-xs text-[#E9D5FF]/60">Publicados no Mês</span>
+                  <p className="text-lg font-bold text-[#E9D5FF] mt-1">14 Posts</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <button 
+                    onClick={() => setShowCarouselModal(true)}
+                    className="px-5 py-2.5 rounded-xl bg-[#FACC15] text-slate-950 font-bold text-sm hover:bg-[#FDE047] transition-colors shadow-lg shadow-[#FACC15]/10 flex items-center space-x-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Criar Novo Carrossel (IA)</span>
+                  </button>
+                  <span className="text-xs text-slate-400">Saída JSON e geração em lote</span>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rascunhos Recentes de Carrossel</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {carousels.map((c) => (
+                      <div key={c.id} className="p-4 rounded-xl bg-[#111936] border border-slate-800 flex items-center justify-between">
+                        <div>
+                          <h5 className="font-bold text-sm text-white truncate max-w-[200px]">{c.title}</h5>
+                          <span className="text-xs text-[#E9D5FF]/60">{c.slidesCount} Slides • {c.date}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-bold px-2 py-1 rounded bg-[#86198F]/20 text-[#E9D5FF] border border-[#86198F]/40">
+                            PRONTO
+                          </span>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteCarousel(c.id); }}
+                            className="text-slate-500 hover:text-red-400 p-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 bg-[#070B1B] border-t border-slate-800/40 text-center shrink-0">
+          <span className="text-[10px] text-[#E9D5FF]/50 uppercase tracking-widest font-mono">socialoneapp.com.br</span>
+        </div>
+      </div>
+
+
+      {/* 4. BASE DE CONHECIMENTO COLUMN */}
       <div 
         onClick={() => setActive('knowledge')} 
         className={`relative transition-all duration-500 ease-in-out border-r border-slate-800/80 flex flex-col justify-between overflow-hidden ${
           active === 'knowledge' 
-            ? 'flex-[5] bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40' 
-            : 'flex-[1] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer'
+            ? 'flex-1 bg-[#0B132B] z-10 shadow-2xl border-[#86198F]/40 min-w-[320px]' 
+            : 'w-14 min-w-[56px] max-w-[56px] bg-[#090E22] hover:bg-[#0B132B] cursor-pointer items-center py-6'
         }`}
       >
         {active === 'knowledge' && (
@@ -1148,28 +1229,26 @@ export default function DashboardMasterWorkspace() {
         )}
 
         {/* Column Header */}
-        <div className="p-6 flex items-center justify-between border-b border-slate-800/60 shrink-0">
-          <div className="flex items-center space-x-3 overflow-hidden">
-            <div className={`p-2.5 rounded-xl transition-colors ${
-              active === 'knowledge' 
-                ? 'bg-[#581C87] text-white shadow-lg shadow-purple-950/50' 
-                : 'bg-[#151D3B] text-[#FACC15]'
-            }`}>
-              <Database className="w-5 h-5" />
-            </div>
-            {active === 'knowledge' && (
+        {active === 'knowledge' ? (
+          <div className="p-6 flex items-center justify-between border-b border-slate-800/60 shrink-0">
+            <div className="flex items-center space-x-3 overflow-hidden">
+              <div className="p-2.5 rounded-xl bg-[#581C87] text-white shadow-lg shadow-purple-950/50">
+                <Database className="w-5 h-5" />
+              </div>
               <div>
                 <h2 className="text-lg font-bold tracking-wide text-white">Base de Conhecimento</h2>
                 <p className="text-xs text-[#E9D5FF]">PDFs & Google Drive (RAG)</p>
               </div>
-            )}
+            </div>
           </div>
-          {active !== 'knowledge' && (
-            <span className="text-xs font-semibold text-[#E9D5FF]/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase">
-              Base de Dados
+        ) : (
+          <div className="flex flex-col items-center space-y-4 my-auto">
+            <Database className="w-5 h-5 text-[#FACC15]" />
+            <span className="text-xs font-semibold text-[#E9D5FF]/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase truncate max-h-[200px]">
+              BASE DE DADOS
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Column Inner Content */}
         <div className="flex-1 p-6 overflow-y-auto">
