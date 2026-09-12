@@ -132,7 +132,40 @@ export default function DashboardMasterWorkspace() {
 
   // --- GOOGLE CALENDAR AUTH STATE ---
   const [googleCalendarConnected, setGoogleCalendarConnected] = useState(true);
+  const [googleCalendarEmail, setGoogleCalendarEmail] = useState('contato.empresa@gmail.com');
+  const [googleCalendarId, setGoogleCalendarId] = useState('primary');
+  const [googleAuthTab, setGoogleAuthTab] = useState<'manual' | 'oauth'>('manual');
+  const [savingCalendar, setSavingCalendar] = useState(false);
+  const [calendarMsg, setCalendarMsg] = useState<string | null>(null);
   const [showGoogleAuthModal, setShowGoogleAuthModal] = useState(false);
+
+  const handleSaveGoogleCalendar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!googleCalendarEmail.trim() || savingCalendar) return;
+    setSavingCalendar(true);
+    setCalendarMsg(null);
+    try {
+      const res = await fetch('/api/calendar/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: 1, calendarEmail: googleCalendarEmail.trim(), calendarId: googleCalendarId.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setGoogleCalendarConnected(true);
+        setGoogleCalendarEmail(data.email);
+        localStorage.setItem('soapp_gcal_email', data.email);
+        setCalendarMsg(`✅ Calendário Google (${data.email}) vinculado com sucesso!`);
+        setTimeout(() => { setShowGoogleAuthModal(false); setCalendarMsg(null); }, 2200);
+      } else {
+        setCalendarMsg(`⚠️ ${data.error || 'Erro ao vincular calendário.'}`);
+      }
+    } catch (err: any) {
+      setCalendarMsg(`⚠️ Erro: ${err?.message}`);
+    } finally {
+      setSavingCalendar(false);
+    }
+  };
 
   // --- RAG URL / WEB SCRAPING STATE ---
   const [showUrlModal, setShowUrlModal] = useState(false);
@@ -1016,7 +1049,7 @@ export default function DashboardMasterWorkspace() {
                       </div>
                     </div>
                     <p className="text-sm text-[#E9D5FF]/80 leading-relaxed">
-                      A IA consulta a disponibilidade em tempo real e realiza os agendamentos salvando o número do WhatsApp do cliente no evento.
+                      A IA consulta a disponibilidade em tempo real na conta <strong className="text-[#FACC15] font-mono">{googleCalendarEmail}</strong> e realiza os agendamentos salvando o número do WhatsApp do cliente no evento.
                     </p>
 
                     {cronTriggerMsg && (
@@ -2043,7 +2076,7 @@ export default function DashboardMasterWorkspace() {
       {/* MODAL: GOOGLE CALENDAR AUTH */}
       {showGoogleAuthModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-          <div className="bg-[#111936] border border-[#4285F4]/40 p-6 rounded-3xl max-w-md w-full space-y-4 relative shadow-2xl">
+          <div className="bg-[#111936] border border-[#4285F4]/40 p-6 rounded-3xl max-w-lg w-full space-y-4 relative shadow-2xl">
             <button onClick={() => setShowGoogleAuthModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
             <div className="flex items-center space-x-3">
               <div className="p-2.5 rounded-xl bg-[#4285F4]/20 text-[#4285F4]">
@@ -2051,43 +2084,134 @@ export default function DashboardMasterWorkspace() {
               </div>
               <div>
                 <h3 className="font-bold text-white text-base">Sincronização Google Calendar (SSOT)</h3>
-                <p className="text-xs text-slate-400">OAuth 2.0 & Google Workspace API</p>
+                <p className="text-xs text-slate-400">Conecte sua agenda por E-mail ou por Login OAuth 2.0</p>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#090E22] border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300 font-semibold">Status do Token OAuth:</span>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
-                  {googleCalendarConnected ? 'Ativo & Sincronizado' : 'Pendente de Autorização'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                A integração via OAuth 2.0 conecta seu calendário corporativo em tempo real para permitir que o bot agende, consulte e altere horários sem conflitos.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <a
-                href="/api/auth/google"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setGoogleCalendarConnected(true);
-                  alert('✅ Google Calendar autenticado e sincronizado com a fonte única de verdade (SSOT)!');
-                  setShowGoogleAuthModal(false);
-                }}
-                className="w-full py-3 rounded-xl bg-[#4285F4] hover:bg-[#3367D6] text-white font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-lg"
-              >
-                <Globe className="w-4 h-4" />
-                <span>Autenticar com Conta do Google</span>
-              </a>
+            {/* Navigation Tabs */}
+            <div className="flex items-center space-x-2 border-b border-slate-800 pb-2">
               <button
-                onClick={() => setShowGoogleAuthModal(false)}
-                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors"
+                type="button"
+                onClick={() => setGoogleAuthTab('manual')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  googleAuthTab === 'manual'
+                    ? 'bg-[#4285F4] text-white shadow-md'
+                    : 'bg-[#090E22] text-slate-400 hover:text-white border border-slate-800'
+                }`}
               >
-                Fechar
+                1. Vincular E-mail do Calendário
+              </button>
+              <button
+                type="button"
+                onClick={() => setGoogleAuthTab('oauth')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  googleAuthTab === 'oauth'
+                    ? 'bg-[#4285F4] text-white shadow-md'
+                    : 'bg-[#090E22] text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                2. Autenticação OAuth (Login Google)
               </button>
             </div>
+
+            {/* TAB 1: MANUAL CALENDAR EMAIL LINKING */}
+            {googleAuthTab === 'manual' && (
+              <form onSubmit={handleSaveGoogleCalendar} className="space-y-4">
+                <div className="p-3.5 rounded-2xl bg-[#090E22] border border-slate-800 text-xs text-slate-300 leading-relaxed">
+                  💡 <strong>Para quem não logou pelo Google:</strong> Digite o e-mail da sua conta Google onde os agendamentos devem ser sincronizados.
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">E-mail da Conta do Google Calendar</label>
+                  <input
+                    type="email"
+                    required
+                    value={googleCalendarEmail}
+                    onChange={e => setGoogleCalendarEmail(e.target.value)}
+                    placeholder="exemplo@gmail.com ou suaempresa@googleworkspace.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#090E22] border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#4285F4]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1">ID do Calendário (Padrão: primary)</label>
+                  <input
+                    type="text"
+                    value={googleCalendarId}
+                    onChange={e => setGoogleCalendarId(e.target.value)}
+                    placeholder="primary"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#090E22] border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#4285F4]"
+                  />
+                </div>
+
+                {calendarMsg && (
+                  <div className={`p-3 rounded-xl border text-xs leading-relaxed ${
+                    calendarMsg.startsWith('✅') ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                  }`}>
+                    {calendarMsg}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={savingCalendar}
+                  className="w-full py-3 rounded-xl bg-[#4285F4] hover:bg-[#3367D6] text-white font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-lg disabled:opacity-50"
+                >
+                  {savingCalendar ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>Salvando e Sincronizando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-4 h-4" />
+                      <span>Salvar & Sincronizar Google Calendar</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* TAB 2: DIRECT OAUTH REDIRECT & REQUIREMENT EXPLANATION */}
+            {googleAuthTab === 'oauth' && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-[#090E22] border border-slate-800 space-y-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-300 font-semibold">Status do Login OAuth Google:</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                      {googleCalendarConnected ? 'Ativo' : 'Pendente'}
+                    </span>
+                  </div>
+                  <p className="text-slate-400 leading-relaxed">
+                    O botão abaixo redirecionará para a tela oficial de permissões da Google. Para ativá-lo no seu domínio de produção, certifique-se de configurar as credenciais no Google Cloud Console.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 space-y-1.5">
+                  <span className="font-bold block">⚙️ Requisitos para ativar o Google OAuth no servidor:</span>
+                  <ul className="list-disc list-inside text-[11px] text-amber-200/90 space-y-1">
+                    <li><code className="bg-slate-900 px-1 py-0.5 rounded text-amber-400">GOOGLE_CLIENT_ID</code> (Crie em console.cloud.google.com)</li>
+                    <li><code className="bg-slate-900 px-1 py-0.5 rounded text-amber-400">GOOGLE_CLIENT_SECRET</code> (Chave Secreta OAuth 2.0)</li>
+                    <li><code className="bg-slate-900 px-1 py-0.5 rounded text-amber-400">NEXTAUTH_URL</code> = <code className="text-white">https://www.socialoneapp.com.br</code></li>
+                  </ul>
+                </div>
+
+                <a
+                  href="/api/auth/google"
+                  className="w-full py-3 rounded-xl bg-[#4285F4] hover:bg-[#3367D6] text-white font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-lg block text-center"
+                >
+                  <Globe className="w-4 h-4 inline" />
+                  <span>Autenticar com Conta do Google (OAuth 2.0)</span>
+                </a>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowGoogleAuthModal(false)}
+              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors"
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}
