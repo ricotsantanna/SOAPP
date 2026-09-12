@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getWhatsAppInstance, saveWhatsAppInstance } from '@/lib/db';
-import { fetchQrCode, sendWhatsAppMessage, getInstanceStatus } from '@/lib/evolution';
+import { fetchQrCode, sendWhatsAppMessage, getInstanceStatus, logoutInstance } from '@/lib/evolution';
 import { generateAIReply } from '@/lib/ai';
 
 export async function GET(req: Request) {
@@ -10,6 +10,14 @@ export async function GET(req: Request) {
 
   const instance = await getWhatsAppInstance(userId);
   const instanceName = instance?.instance_name || 'socialone_default';
+
+  if (action === 'logout') {
+    const logoutRes = await logoutInstance(instanceName);
+    if (instance) {
+      await saveWhatsAppInstance(userId, { status: 'disconnected', phone_number: '' });
+    }
+    return NextResponse.json(logoutRes);
+  }
 
   if (action === 'qrcode') {
     const qrData = await fetchQrCode(instanceName);

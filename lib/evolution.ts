@@ -219,6 +219,31 @@ export async function fetchQrCode(instanceName: string = 'socialone_default'): P
 }
 
 /**
+ * Logs out and disconnects a WhatsApp instance on Evolution API.
+ */
+export async function logoutInstance(instanceName: string = 'socialone_default'): Promise<{ success: boolean; error?: string }> {
+  const baseUrl = getEvolutionBaseUrl();
+  const headers = getHeaders();
+
+  try {
+    const res = await fetch(`${baseUrl}/instance/logout/${instanceName}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (res.ok) return { success: true };
+    
+    // Fallback: try DELETE /instance/delete
+    const delRes = await fetch(`${baseUrl}/instance/delete/${instanceName}`, {
+      method: 'DELETE',
+      headers,
+    });
+    return { success: delRes.ok };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Erro ao desconectar instância' };
+  }
+}
+
+/**
  * Sends a text message via WhatsApp using the Easypanel Evolution API.
  */
 export async function sendWhatsAppMessage(instanceName: string = 'socialone_default', remoteJid: string, text: string) {

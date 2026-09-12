@@ -61,6 +61,21 @@ export default function DashboardMasterWorkspace() {
   const [customBaseUrl, setCustomBaseUrl] = useState('https://api.groq.com/openai/v1');
   const [customModelName, setCustomModelName] = useState('llama-3.1-8b-instant');
 
+  // Track saved key status from DB (only true after hitting save or loading initial settings)
+  const [savedKeys, setSavedKeys] = useState<{
+    openai: boolean;
+    gemini: boolean;
+    claude: boolean;
+    nvidia: boolean;
+    custom: boolean;
+  }>({
+    openai: false,
+    gemini: false,
+    claude: false,
+    nvidia: false,
+    custom: false,
+  });
+
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showClaudeKey, setShowClaudeKey] = useState(false);
@@ -83,7 +98,8 @@ export default function DashboardMasterWorkspace() {
         // Load Settings
         const settingsRes = await fetch('/api/settings?userId=1');
         if (settingsRes.ok) {
-          const sData = await settingsRes.json();
+          const sObj = await settingsRes.json();
+          const sData = sObj.data || sObj;
           if (sData.openaiKey) setOpenaiKey(sData.openaiKey);
           if (sData.geminiKey) setGeminiKey(sData.geminiKey);
           if (sData.claudeKey) setClaudeKey(sData.claudeKey);
@@ -92,6 +108,15 @@ export default function DashboardMasterWorkspace() {
           if (sData.customBaseUrl) setCustomBaseUrl(sData.customBaseUrl);
           if (sData.customModelName) setCustomModelName(sData.customModelName);
           if (sData.systemPrompt) setSystemPrompt(sData.systemPrompt);
+
+          setSavedKeys({
+            openai: !!sData.openaiKey && !sData.openaiKey.includes('xxxx'),
+            gemini: !!sData.geminiKey && !sData.geminiKey.includes('xxxx'),
+            claude: !!sData.claudeKey && !sData.claudeKey.includes('xxxx'),
+            nvidia: !!sData.nvidiaKey && !sData.nvidiaKey.includes('xxxx'),
+            custom: !!sData.customKey && !sData.customKey.includes('xxxx'),
+          });
+
           if (sData.activeProvider) {
             setSelectedProvider(sData.activeProvider);
             const textMap: Record<string, string> = {
@@ -173,6 +198,8 @@ export default function DashboardMasterWorkspace() {
     }
   };
 
+  const [disconnectingWa, setDisconnectingWa] = useState(false);
+
   const handleFetchQr = async () => {
     setShowQrModal(true);
     setQrLoading(true);
@@ -182,16 +209,42 @@ export default function DashboardMasterWorkspace() {
       const data = await res.json();
       if (data.qrcode) {
         setQrCodeData(data.qrcode);
+      } else if (data.status === 'connected') {
+        setWaStatus('connected');
+        setQrCodeData(null);
+        setQrError('ALREADY_CONNECTED');
       } else if (data.error) {
         setQrError(data.error);
       } else {
-        setQrError('Carregando QR Code da Evolution API no Easypanel...');
+        setQrError('Aguardando geração do QR Code...');
       }
     } catch (error: any) {
       console.error('QR Fetch Error:', error);
       setQrError('Erro de comunicação com a Evolution API.');
     } finally {
       setQrLoading(false);
+    }
+  };
+
+  const handleDisconnectWhatsApp = async () => {
+    if (!confirm('Deseja desconectar esta instância do WhatsApp? Você precisará ler um novo QR Code para reconectar.')) return;
+    setDisconnectingWa(true);
+    try {
+      const res = await fetch('/api/whatsapp?action=logout&userId=1');
+      const data = await res.json();
+      if (data.success) {
+        setWaStatus('disconnected');
+        setQrCodeData(null);
+        setQrError(null);
+        setShowQrModal(false);
+        alert('WhatsApp desconectado com sucesso! Agora você pode gerar um novo QR Code.');
+      } else {
+        alert('Falha ao desconectar do WhatsApp: ' + (data.error || 'Erro desconhecido'));
+      }
+    } catch (err: any) {
+      alert('Erro de rede ao desconectar: ' + err.message);
+    } finally {
+      setDisconnectingWa(false);
     }
   };
 
@@ -291,8 +344,15 @@ export default function DashboardMasterWorkspace() {
         }),
       });
       const data = await res.json();
-      if (data.message) {
-        setSavedSettingsMsg(data.message);
+      if (res.ok && data.success) {
+        setSavedSettingsMsg(data.notice || 'Configurações salvas com sucesso!');
+        setSavedKeys({
+          openai: !!openaiKey && !openaiKey.includes('xxxx'),
+          gemini: !!geminiKey && !geminiKey.includes('xxxx'),
+          claude: !!claudeKey && !claudeKey.includes('xxxx'),
+          nvidia: !!nvidiaKey && !nvidiaKey.includes('xxxx'),
+          custom: !!customKey && !customKey.includes('xxxx'),
+        });
         const textMap: Record<string, string> = {
           openai: 'OpenAI (GPT-4o)',
           gemini: 'Google Gemini (Gratuito)',
@@ -301,8 +361,10 @@ export default function DashboardMasterWorkspace() {
           custom: 'Provedor Customizado / Groq'
         };
         setActiveProviderText(textMap[selectedProvider] || 'OpenAI (GPT-4o)');
-        setTimeout(() => setSavedSettingsMsg(null), 7000);
+      } else {
+        setSavedSettingsMsg(data.notice || 'Erro ao salvar configurações.');
       }
+      setTimeout(() => setSavedSettingsMsg(null), 7000);
     } catch (error) {
       console.error('Error saving settings:', error);
       setSavedSettingsMsg('⚠️ Erro ao comunicar com o servidor.');
@@ -768,7 +830,7 @@ export default function DashboardMasterWorkspace() {
                       setActiveProviderText('OpenAI (GPT-4o)');
                     }}
                     className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
-                      openaiKey && !openaiKey.includes('xxxx')
+                      savedKeys.openai
                         ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
                         : 'bg-slate-900/40 border-slate-800 text-slate-400'
                     } ${selectedProvider === 'openai' ? 'ring-2 ring-[#86198F]' : ''}`}
@@ -777,7 +839,7 @@ export default function DashboardMasterWorkspace() {
                       <Sparkles className="w-3.5 h-3.5 text-[#FACC15]" />
                       <span>OpenAI</span>
                     </div>
-                    {openaiKey && !openaiKey.includes('xxxx') ? (
+                    {savedKeys.openai ? (
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3" />
                         <span>Ativa</span>
@@ -795,7 +857,7 @@ export default function DashboardMasterWorkspace() {
                       setActiveProviderText('Google Gemini (Gratuito)');
                     }}
                     className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
-                      geminiKey && !geminiKey.includes('xxxx')
+                      savedKeys.gemini
                         ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
                         : 'bg-slate-900/40 border-slate-800 text-slate-400'
                     } ${selectedProvider === 'gemini' ? 'ring-2 ring-[#86198F]' : ''}`}
@@ -804,7 +866,7 @@ export default function DashboardMasterWorkspace() {
                       <Bot className="w-3.5 h-3.5 text-emerald-400" />
                       <span>Google Gemini</span>
                     </div>
-                    {geminiKey && !geminiKey.includes('xxxx') ? (
+                    {savedKeys.gemini ? (
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3" />
                         <span>Ativa</span>
@@ -822,7 +884,7 @@ export default function DashboardMasterWorkspace() {
                       setActiveProviderText('NVIDIA NIM (DeepSeek/Llama 3)');
                     }}
                     className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
-                      nvidiaKey && !nvidiaKey.includes('xxxx')
+                      savedKeys.nvidia
                         ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
                         : 'bg-slate-900/40 border-slate-800 text-slate-400'
                     } ${selectedProvider === 'nvidia' ? 'ring-2 ring-[#86198F]' : ''}`}
@@ -831,7 +893,7 @@ export default function DashboardMasterWorkspace() {
                       <Sparkles className="w-3.5 h-3.5 text-green-400" />
                       <span>NVIDIA NIM</span>
                     </div>
-                    {nvidiaKey && !nvidiaKey.includes('xxxx') ? (
+                    {savedKeys.nvidia ? (
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3" />
                         <span>Ativa</span>
@@ -849,7 +911,7 @@ export default function DashboardMasterWorkspace() {
                       setActiveProviderText('Anthropic Claude');
                     }}
                     className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
-                      claudeKey && !claudeKey.includes('xxxx')
+                      savedKeys.claude
                         ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
                         : 'bg-slate-900/40 border-slate-800 text-slate-400'
                     } ${selectedProvider === 'claude' ? 'ring-2 ring-[#86198F]' : ''}`}
@@ -858,7 +920,7 @@ export default function DashboardMasterWorkspace() {
                       <Bot className="w-3.5 h-3.5 text-amber-400" />
                       <span>Claude</span>
                     </div>
-                    {claudeKey && !claudeKey.includes('xxxx') ? (
+                    {savedKeys.claude ? (
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3" />
                         <span>Ativa</span>
@@ -876,16 +938,16 @@ export default function DashboardMasterWorkspace() {
                       setActiveProviderText('Provedor Customizado / Groq');
                     }}
                     className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
-                      customKey && !customKey.includes('xxxx')
+                      savedKeys.custom
                         ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
                         : 'bg-slate-900/40 border-slate-800 text-slate-400'
                     } ${selectedProvider === 'custom' ? 'ring-2 ring-[#86198F]' : ''}`}
                   >
                     <div className="flex items-center space-x-2">
-                      <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                      <Cpu className="w-3.5 h-3.5 text-purple-400" />
                       <span>Custom / Groq</span>
                     </div>
-                    {customKey && !customKey.includes('xxxx') ? (
+                    {savedKeys.custom ? (
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3" />
                         <span>Ativa</span>
@@ -1165,16 +1227,24 @@ export default function DashboardMasterWorkspace() {
           <div className="bg-[#111936] border border-[#581C87]/40 p-6 rounded-3xl max-w-sm w-full text-center space-y-4 relative shadow-2xl">
             <button onClick={() => setShowQrModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
             <h3 className="font-bold text-white text-base">Pareamento WhatsApp Business</h3>
-            <p className="text-xs text-slate-400">Escaneie o QR Code com seu WhatsApp para conectar a Evolution API</p>
+            <p className="text-xs text-slate-400">Conexão com a Evolution API no Easypanel</p>
             
             <div className="w-56 h-56 bg-slate-950 mx-auto rounded-2xl border border-slate-800 p-2 flex items-center justify-center relative overflow-hidden">
               {qrLoading ? (
                 <div className="flex flex-col items-center space-y-2 text-[#FACC15]">
                   <RefreshCw className="w-8 h-8 animate-spin" />
-                  <span className="text-xs font-semibold">Gerando QR Code na Evolution API...</span>
+                  <span className="text-xs font-semibold">Buscando QR Code...</span>
                 </div>
               ) : qrCodeData ? (
                 <img src={qrCodeData} alt="QR Code WhatsApp" className="w-full h-full object-contain rounded-lg" />
+              ) : qrError === 'ALREADY_CONNECTED' || waStatus === 'connected' ? (
+                <div className="p-4 text-center space-y-3">
+                  <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <div className="text-xs font-bold text-emerald-400">WhatsApp Conectado!</div>
+                  <div className="text-[11px] text-slate-300 leading-relaxed">Sua instância do WhatsApp já está emparelhada e pronta para uso.</div>
+                </div>
               ) : (
                 <div className="p-4 text-center space-y-2">
                   <AlertCircle className="w-6 h-6 text-[#FACC15] mx-auto" />
@@ -1186,9 +1256,24 @@ export default function DashboardMasterWorkspace() {
               )}
             </div>
 
-            <button onClick={() => setShowQrModal(false)} className="w-full py-2.5 bg-[#FACC15] text-slate-950 font-bold rounded-xl text-xs hover:bg-[#FDE047]">
-              Concluído
-            </button>
+            {qrError === 'ALREADY_CONNECTED' || waStatus === 'connected' ? (
+              <div className="space-y-2 pt-2">
+                <button 
+                  onClick={handleDisconnectWhatsApp} 
+                  disabled={disconnectingWa}
+                  className="w-full py-2.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 font-bold rounded-xl text-xs flex items-center justify-center space-x-2 transition-all"
+                >
+                  {disconnectingWa ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>Desconectar Instância WhatsApp</span>}
+                </button>
+                <button onClick={() => setShowQrModal(false)} className="w-full py-2 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs hover:bg-slate-700">
+                  Manter Conectado (Fechar)
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setShowQrModal(false)} className="w-full py-2.5 bg-[#FACC15] text-slate-950 font-bold rounded-xl text-xs hover:bg-[#FDE047]">
+                Concluído
+              </button>
+            )}
           </div>
         </div>
       )}
