@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getWhatsAppInstance, saveWhatsAppInstance } from '@/lib/db';
+import { getWhatsAppInstance, saveWhatsAppInstance, saveChatMessage } from '@/lib/db';
 import { fetchQrCode, sendWhatsAppMessage, getInstanceStatus, logoutInstance } from '@/lib/evolution';
 import { generateAIReply } from '@/lib/ai';
 
@@ -160,14 +160,21 @@ export async function POST(req: Request) {
         if (text && text.trim()) {
           console.log(`[WhatsApp Incoming Message] From: ${remoteJid} -> Text: "${text}"`);
 
-          // Call AI generation engine - automatically reads active provider & key from DB
+          // 1. Save customer message to DB
+          await saveChatMessage(1, 'user', text, remoteJid);
+
+          // 2. Call AI generation engine with 15-message memory
           const aiResult = await generateAIReply({ 
             message: text, 
             userId: 1,
+            remoteJid,
           });
           console.log(`[WhatsApp AI Response] Generated via ${aiResult.provider}: "${aiResult.reply.substring(0, 50)}..."`);
 
-          // Send back answer via WhatsApp Evolution API
+          // 3. Save AI reply to DB
+          await saveChatMessage(1, 'assistant', aiResult.reply, remoteJid);
+
+          // 4. Send back answer via WhatsApp Evolution API
           await sendWhatsAppMessage(instanceName, remoteJid, aiResult.reply);
         }
       }

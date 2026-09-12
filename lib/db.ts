@@ -49,6 +49,15 @@ export interface Carousel {
   created_at?: string;
 }
 
+export interface ChatMessage {
+  id?: number;
+  user_id: number;
+  remote_jid?: string;
+  sender: 'user' | 'assistant';
+  text: string;
+  created_at?: string;
+}
+
 /**
  * Initializes database tables according to Social One SQL schema with password authentication.
  */
@@ -111,6 +120,17 @@ export async function initDb() {
       );
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        remote_jid VARCHAR(100) DEFAULT 'web_client',
+        sender VARCHAR(20) NOT NULL,
+        text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     return { success: true, message: "Database schema validated successfully." };
   } catch (error) {
     console.warn("DB Initialization note (Database environment variables may be missing during build/demo):", error);
@@ -157,7 +177,8 @@ const inMemoryStore = {
   carousels: [
     { id: 1, user_id: 1, title: '5 Dicas para Automatizar seu Atendimento', slides_count: 5, date: 'Hoje' },
     { id: 2, user_id: 1, title: 'Por que o modelo BYOAI economiza até 90%?', slides_count: 4, date: 'Ontem' }
-  ] as Carousel[]
+  ] as Carousel[],
+  chatMessages: [] as ChatMessage[]
 };
 
 export async function authenticateUser(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
@@ -515,5 +536,57 @@ export async function toggleUserRole(userId: number): Promise<{ success: boolean
       return { success: true, newRole: target.role };
     }
     return { success: false, newRole: 'user' };
+  }
+}
+
+export async function saveChatMessage(userId: number, sender: 'user' | 'assistant', text: string, remoteJid: string = 'web_client'): Promise<ChatMessage> {
+  try {
+    const inserted = await sql<ChatMessage>`
+      INSERT INTO chat_messages (user_id, sender, text, remote_jid)
+      VALUES (${userId}, ${sender}, ${text}, ${remoteJid})
+      RETURNING *;
+    `;
+    return inserted.rows[0];
+  } catch {
+    const msg: ChatMessage = {
+      id: Date.now(),
+      user_id: userId,
+      sender,
+      text,
+      remote_jid: remoteJid,
+      created_at: new Date().toISOString(),
+    };
+    inMemoryStore.chatMessages.push(msg);
+    return msg;
+  }
+}
+
+export async function getRecentChatMessages(userId: number, limit: number = 15, remoteJid?: string): Promise<ChatMessage[]> {
+  try {
+    let res;
+    if (remoteJid) {
+      res = await sql<ChatMessage>`
+        SELECT * FROM (
+          SELECT * FROM chat_messages 
+          WHERE user_id = ${userId} AND remote_jid = ${remoteJid}
+          ORDER BY id DESC LIMIT ${limit}
+        ) sub ORDER BY id ASC;
+      `;
+    } else {
+      res = await sql<ChatMessage>`
+        SELECT * FROM (
+          SELECT * FROM chat_messages 
+          WHERE user_id = ${userId}
+          ORDER BY id DESC LIMIT ${limit}
+        ) sub ORDER BY id ASC;
+      `;
+    }
+    return res.rows;
+  } catch {
+    let filtered = inMemoryStore.chatMessages.filter(m => m.user_id === userId);
+    if (remoteJid) {
+      filtered = filtered.filter(m => m.remote_jid === remoteJid);
+    }
+    return filtered.slice(-limit);
   }
 }

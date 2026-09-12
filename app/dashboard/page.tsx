@@ -198,12 +198,42 @@ export default function DashboardMasterWorkspace() {
           const waData = await waRes.json();
           if (waData.status) setWaStatus(waData.status);
         }
+
+        // Load live chat messages
+        const chatRes = await fetch('/api/ai/chat?userId=1');
+        if (chatRes.ok) {
+          const cData = await chatRes.json();
+          if (cData.messages && Array.isArray(cData.messages)) {
+            setChatMessages(cData.messages.map((m: any) => ({
+              sender: m.sender === 'user' ? 'user' : 'ai',
+              text: m.text,
+            })));
+          }
+        }
       } catch (err) {
         console.error('Error loading initial dashboard data:', err);
       }
     }
 
     loadInitialData();
+
+    // Poll for live WhatsApp messages every 3 seconds
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/ai/chat?userId=1');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages && Array.isArray(data.messages)) {
+            setChatMessages(data.messages.map((m: any) => ({
+              sender: m.sender === 'user' ? 'user' : 'ai',
+              text: m.text,
+            })));
+          }
+        }
+      } catch {}
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Handlers
@@ -239,7 +269,14 @@ export default function DashboardMasterWorkspace() {
         }),
       });
       const data = await res.json();
-      setChatMessages(prev => [...prev, { sender: 'ai', text: data.reply || 'Sem resposta.' }]);
+      if (data.messages && Array.isArray(data.messages)) {
+        setChatMessages(data.messages.map((m: any) => ({
+          sender: m.sender === 'user' ? 'user' : 'ai',
+          text: m.text,
+        })));
+      } else if (data.reply) {
+        setChatMessages(prev => [...prev, { sender: 'ai', text: data.reply }]);
+      }
       setWaMessagesCount(prev => prev + 1);
     } catch (error) {
       setChatMessages(prev => [...prev, { sender: 'ai', text: 'Erro ao conectar ao motor de IA.' }]);
@@ -555,14 +592,14 @@ export default function DashboardMasterWorkspace() {
                   <span className="text-xs text-[#E9D5FF]/70 font-mono">Easypanel Host</span>
                 </div>
 
-                {/* Live Simulator Chat Box */}
+                {/* Live Chat Box */}
                 <div className="p-4 rounded-2xl bg-[#090E22] border border-slate-800 space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                     <span className="text-xs font-bold text-slate-300 flex items-center space-x-1.5">
                       <Bot className="w-4 h-4 text-[#FACC15]" />
-                      <span>Simulador de Atendimento em Tempo Real</span>
+                      <span>Atendimento ao Vivo — Chat do WhatsApp</span>
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-mono">ONLINE</span>
+                    <span className="text-[10px] text-emerald-400 font-mono">EM TEMPO REAL</span>
                   </div>
 
                   <div className="h-44 overflow-y-auto space-y-2 text-xs pr-1">
@@ -588,7 +625,7 @@ export default function DashboardMasterWorkspace() {
                       type="text"
                       value={chatInput}
                       onChange={e => setChatInput(e.target.value)}
-                      placeholder="Simular mensagem do cliente..."
+                      placeholder="Enviar mensagem pelo WhatsApp..."
                       className="flex-1 px-3 py-2 rounded-xl bg-[#111936] border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#581C87]"
                     />
                     <button type="submit" disabled={chatLoading} className="p-2 rounded-xl bg-[#FACC15] text-slate-950 font-bold hover:bg-[#FDE047]">

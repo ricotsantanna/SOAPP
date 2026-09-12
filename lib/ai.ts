@@ -1,16 +1,18 @@
-import { getAIKeys, getWhatsAppInstance, getOrCreateDemoUser } from '@/lib/db';
+import { getAIKeys, getWhatsAppInstance, getOrCreateDemoUser, getRecentChatMessages } from '@/lib/db';
 import { decryptApiKey } from '@/lib/encryption';
 import { buildRAGContext, constructSystemPrompt } from '@/lib/rag';
 
 export async function generateAIReply({
   message,
   userId = 1,
+  remoteJid,
   providerPreference,
   apiKey: directApiKey,
   systemPrompt: directSystemPrompt,
 }: {
   message: string;
   userId?: number;
+  remoteJid?: string;
   providerPreference?: string;
   apiKey?: string;
   systemPrompt?: string;
@@ -21,6 +23,11 @@ export async function generateAIReply({
   // Fetch user AI Keys & Instance Settings
   const userKeys = await getAIKeys(uid);
   const instance = await getWhatsAppInstance(uid);
+
+  // Fetch recent conversation history (up to 15 messages memory)
+  const rawHistory = await getRecentChatMessages(uid, 15, remoteJid);
+  // Ensure we don't duplicate the current message if already saved upstream
+  const history = rawHistory.filter(h => h.text !== message);
 
   // Selected Active Provider
   let provider = providerPreference || instance?.active_provider || 'openai';
@@ -57,6 +64,16 @@ export async function generateAIReply({
   const ragContext = await buildRAGContext(uid, message);
   const systemPrompt = directSystemPrompt || constructSystemPrompt(instance?.system_prompt, ragContext);
 
+  // Construct message payload with 15-message memory
+  const formattedOpenAiMessages = [
+    { role: 'system', content: systemPrompt },
+    ...history.map(m => ({
+      role: m.sender === 'user' ? 'user' : 'assistant',
+      content: m.text
+    })),
+    { role: 'user', content: message }
+  ];
+
   // Execution with user's BYOAI Key
   if (plainApiKey || provider === 'custom') {
     
@@ -76,10 +93,7 @@ export async function generateAIReply({
             },
             body: JSON.stringify({
               model,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: message },
-              ],
+              messages: formattedOpenAiMessages,
               temperature: 0.7,
             }),
           });
@@ -117,6 +131,14 @@ export async function generateAIReply({
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${plainApiKey.trim()}`,
       ];
 
+      const geminiContents = [
+        ...history.map(m => ({
+          role: m.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: m.text }]
+        })),
+        { role: 'user', parts: [{ text: history.length > 0 ? message : `${systemPrompt}\n\nCliente: ${message}` }] }
+      ];
+
       let geminiReply = '';
       let geminiErrorMsg = '';
 
@@ -126,7 +148,8 @@ export async function generateAIReply({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nCliente: ${message}` }] }]
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              contents: geminiContents
             }),
           });
 
@@ -160,6 +183,14 @@ export async function generateAIReply({
       let claudeReply = '';
       let claudeErr = '';
 
+      const claudeMessages = [
+        ...history.map(m => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.text
+        })),
+        { role: 'user', content: message }
+      ];
+
       for (const model of claudeModels) {
         try {
           const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -173,7 +204,7 @@ export async function generateAIReply({
               model,
               max_tokens: 1024,
               system: systemPrompt,
-              messages: [{ role: 'user', content: message }]
+              messages: claudeMessages
             })
           });
 
@@ -217,10 +248,7 @@ export async function generateAIReply({
             },
             body: JSON.stringify({
               model,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: message }
-              ],
+              messages: formattedOpenAiMessages,
               temperature: 0.6,
             })
           });
@@ -264,10 +292,7 @@ export async function generateAIReply({
           },
           body: JSON.stringify({
             model: modelName,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: message }
-            ]
+            messages: formattedOpenAiMessages
           })
         });
 
