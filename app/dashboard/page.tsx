@@ -480,10 +480,10 @@ export default function DashboardMasterWorkspace() {
 
     setCarouselLoading(true);
     try {
-      const res = await fetch('/api/carousels', {
+      const res = await fetch('/api/generate-post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 1, topic: carouselTopic }),
+        body: JSON.stringify({ userId: 1, topic: carouselTopic, slidesCount: 5 }),
       });
       const data = await res.json();
       if (data.carousel) {
@@ -491,8 +491,8 @@ export default function DashboardMasterWorkspace() {
           {
             id: data.carousel.id,
             title: data.carousel.title,
-            slidesCount: data.carousel.slides_count || 5,
-            date: data.carousel.date || 'Hoje'
+            slidesCount: data.carousel.slidesCount || data.carousel.slides_count || 5,
+            date: 'Hoje'
           },
           ...prev
         ]);
