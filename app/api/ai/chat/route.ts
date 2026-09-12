@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const instance = await getWhatsAppInstance(uid);
 
     // Selected Active Provider
-    const provider = providerPreference || instance?.active_provider || 'openai';
+    let provider = providerPreference || instance?.active_provider || 'openai';
 
     // Find key for selected provider
     const keyObj = userKeys.find(k => k.provider === provider && k.encrypted_api_key);
@@ -29,6 +29,20 @@ export async function POST(req: Request) {
     // Ignore placeholder dummy keys
     if (plainApiKey.includes('xxxx') || plainApiKey.includes('••••')) {
       plainApiKey = '';
+    }
+
+    // Smart Auto-Fallback: If requested provider key is empty, check if user has ANY valid key saved for another provider!
+    if (!plainApiKey && provider !== 'custom') {
+      const fallbackKey = userKeys.find(k => {
+        if (!k.encrypted_api_key) return false;
+        const dec = decryptApiKey(k.encrypted_api_key);
+        return dec && !dec.includes('xxxx') && !dec.includes('••••') && dec.trim().length > 5;
+      });
+
+      if (fallbackKey) {
+        provider = fallbackKey.provider;
+        plainApiKey = decryptApiKey(fallbackKey.encrypted_api_key);
+      }
     }
 
     // Build System Prompt + RAG Context
