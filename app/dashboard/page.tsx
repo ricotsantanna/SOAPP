@@ -21,11 +21,33 @@ import {
   Trash2,
   FileText,
   Globe,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  ShoppingBag,
+  TrendingUp,
+  DollarSign,
+  Users,
+  Clock,
+  Check
 } from 'lucide-react';
+import OnboardingModal from './OnboardingModal';
+
+const WhatsAppBrandIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.461c-1.854 0-3.603-.498-5.118-1.367l-.367-.213-3.804.997 1.015-3.707-.234-.372a9.78 9.78 0 01-1.503-5.263c0-5.414 4.406-9.82 9.821-9.82 2.624 0 5.09 1.023 6.944 2.878a9.776 9.776 0 012.874 6.942c0 5.415-4.407 9.826-9.828 9.826m8.376-18.201A11.725 11.725 0 0012.051 0C5.411 0 .008 5.403.008 12.043c0 2.12.553 4.19 1.604 6.012L0 24l6.104-1.601A11.776 11.776 0 0012.05 24c6.638 0 12.041-5.403 12.041-12.043 0-3.217-1.253-6.242-3.515-8.513" />
+  </svg>
+);
+
+const InstagramBrandIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+  </svg>
+);
 
 export default function DashboardMasterWorkspace() {
   const [active, setActive] = useState<'whatsapp' | 'instagram' | 'knowledge' | 'settings'>('whatsapp');
+  const [businessModel, setBusinessModel] = useState<'service' | 'retail' | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // --- WHATSAPP STATE ---
   const [waStatus, setWaStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
@@ -95,6 +117,19 @@ export default function DashboardMasterWorkspace() {
   useEffect(() => {
     async function loadInitialData() {
       try {
+        // Load User Profile & Business Model
+        const profRes = await fetch('/api/user/profile?userId=1');
+        if (profRes.ok) {
+          const profData = await profRes.json();
+          if (profData.profile?.business_model) {
+            setBusinessModel(profData.profile.business_model);
+          } else {
+            setShowOnboarding(true);
+          }
+        } else {
+          setShowOnboarding(true);
+        }
+
         // First, load from localStorage (immediate, works regardless of DB)
         const localSettings = localStorage.getItem('soapp_settings');
         if (localSettings) {
@@ -497,6 +532,20 @@ export default function DashboardMasterWorkspace() {
     }
   };
 
+  const handleSelectBusinessModel = async (model: 'service' | 'retail') => {
+    setBusinessModel(model);
+    setShowOnboarding(false);
+    try {
+      await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: 1, businessModel: model }),
+      });
+    } catch (err) {
+      console.error('Error updating business model:', err);
+    }
+  };
+
   return (
     <div className="flex h-full w-full bg-[#0B132B] text-slate-100 overflow-hidden font-sans">
       
@@ -518,10 +567,10 @@ export default function DashboardMasterWorkspace() {
           <div className="flex items-center space-x-3 overflow-hidden">
             <div className={`p-2.5 rounded-xl transition-colors ${
               active === 'whatsapp' 
-                ? 'bg-[#581C87] text-white shadow-lg shadow-purple-950/50' 
-                : 'bg-[#151D3B] text-[#FACC15]'
+                ? 'bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/40 shadow-lg shadow-emerald-950/50' 
+                : 'bg-[#151D3B] text-[#25D366]'
             }`}>
-              <MessageSquare className="w-5 h-5" />
+              <WhatsAppBrandIcon className="w-5 h-5 text-[#25D366]" />
             </div>
             {active === 'whatsapp' && (
               <div>
@@ -666,18 +715,28 @@ export default function DashboardMasterWorkspace() {
                 ? 'bg-[#86198F] text-white shadow-lg shadow-magenta-950/50' 
                 : 'bg-[#151D3B] text-[#FACC15]'
             }`}>
-              <Instagram className="w-5 h-5" />
+              {businessModel === 'service' ? (
+                <Calendar className="w-5 h-5 text-[#FACC15]" />
+              ) : businessModel === 'retail' ? (
+                <ShoppingBag className="w-5 h-5 text-[#FACC15]" />
+              ) : (
+                <InstagramBrandIcon className="w-5 h-5 text-[#E1306C]" />
+              )}
             </div>
             {active === 'instagram' && (
               <div>
-                <h2 className="text-lg font-bold tracking-wide text-white">Instagram</h2>
-                <p className="text-xs text-[#E9D5FF]">Automação & Carrosséis</p>
+                <h2 className="text-lg font-bold tracking-wide text-white">
+                  {businessModel === 'service' ? 'Agenda Inteligente' : businessModel === 'retail' ? 'CRM & Vendas' : 'Instagram'}
+                </h2>
+                <p className="text-xs text-[#E9D5FF]">
+                  {businessModel === 'service' ? 'Google Calendar (SSOT)' : businessModel === 'retail' ? 'Dashboard Financeiro & KPIs' : 'Automação & Carrosséis'}
+                </p>
               </div>
             )}
           </div>
           {active !== 'instagram' && (
             <span className="text-xs font-semibold text-[#E9D5FF]/60 [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase">
-              Instagram
+              {businessModel === 'service' ? 'Agenda' : businessModel === 'retail' ? 'Vendas & CRM' : 'Instagram'}
             </span>
           )}
         </div>
@@ -686,63 +745,204 @@ export default function DashboardMasterWorkspace() {
         <div className="flex-1 p-6 overflow-y-auto">
           {active === 'instagram' && (
             <div className="space-y-6 max-w-4xl">
-              {/* Top Banner Card */}
-              <div className="p-6 rounded-2xl bg-[#111936] border border-[#86198F]/30 backdrop-blur-sm">
-                <h3 className="text-sm font-medium text-[#FACC15] uppercase tracking-wider mb-2">
-                  Painel de Criação — Carrosséis IA
-                </h3>
-                <p className="text-sm text-[#E9D5FF]/80 leading-relaxed">
-                  Gere conteúdos estruturados em slides com base nos dados da empresa e aprove rascunhos antes da publicação.
-                </p>
-              </div>
+              
+              {/* SERVICE VIEW: Agenda Inteligente */}
+              {businessModel === 'service' && (
+                <>
+                  <div className="p-6 rounded-2xl bg-[#111936] border border-[#581C87]/30 backdrop-blur-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-bold text-[#FACC15] uppercase tracking-wider">
+                        Agenda Inteligente — Google Calendar (SSOT)
+                      </h3>
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        SSOT CONECTADO
+                      </span>
+                    </div>
+                    <p className="text-sm text-[#E9D5FF]/80 leading-relaxed">
+                      A IA consulta a disponibilidade em tempo real e realiza os agendamentos salvando o número do WhatsApp do cliente na descrição do evento.
+                    </p>
+                  </div>
 
-              {/* Metrics Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
-                  <span className="text-xs text-[#E9D5FF]/60">Posts Pendentes</span>
-                  <p className="text-lg font-bold text-[#FACC15] mt-1">{carousels.length} Rascunhos</p>
-                </div>
-                <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
-                  <span className="text-xs text-[#E9D5FF]/60">Publicados no Mês</span>
-                  <p className="text-lg font-bold text-[#E9D5FF] mt-1">14 Posts</p>
-                </div>
-              </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Compromissos de Hoje</h4>
+                      <button className="text-xs text-[#FACC15] font-semibold hover:underline flex items-center space-x-1">
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Novo Agendamento</span>
+                      </button>
+                    </div>
 
-              {/* Carousels List */}
-              <div className="space-y-4">
-                <button 
-                  onClick={() => setShowCarouselModal(true)}
-                  className="px-5 py-2.5 rounded-xl bg-[#FACC15] text-slate-950 font-bold text-sm hover:bg-[#FDE047] transition-colors shadow-lg shadow-[#FACC15]/10 flex items-center space-x-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Criar Novo Carrossel</span>
-                </button>
-
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rascunhos Recentes de Carrossel</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {carousels.map((c) => (
-                      <div key={c.id} className="p-4 rounded-xl bg-[#111936] border border-slate-800 flex items-center justify-between">
-                        <div>
-                          <h5 className="font-bold text-sm text-white truncate max-w-[200px]">{c.title}</h5>
-                          <span className="text-xs text-[#E9D5FF]/60">{c.slidesCount} Slides • {c.date}</span>
+                    <div className="space-y-2">
+                      <div className="p-4 rounded-xl bg-[#111936] border border-slate-800 flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="px-3 py-1.5 rounded-lg bg-[#581C87] text-[#FACC15] font-bold text-xs font-mono">
+                            09:00 - 09:45
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-sm text-white">Maria Silva • Consulta Presencial</h5>
+                            <p className="text-xs text-[#E9D5FF]/60 font-mono">WhatsApp: (11) 98888-7777</p>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-[10px] font-bold px-2 py-1 rounded bg-[#86198F]/20 text-[#E9D5FF] border border-[#86198F]/40">
-                            PRONTO
-                          </span>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleDeleteCarousel(c.id); }}
-                            className="text-slate-500 hover:text-red-400 p-1"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          CONFIRMADO 24H
+                        </span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-[#111936] border border-slate-800 flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="px-3 py-1.5 rounded-lg bg-[#581C87] text-[#FACC15] font-bold text-xs font-mono">
+                            11:30 - 12:15
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-sm text-white">Carlos Eduardo • Avaliação Técnica</h5>
+                            <p className="text-xs text-[#E9D5FF]/60 font-mono">WhatsApp: (11) 97777-6666</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                          LEMBRETE ENVIADO
+                        </span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-[#090E22] border border-slate-800/60 flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 font-bold text-xs font-mono">
+                            15:00 - 15:45
+                          </div>
+                          <div>
+                            <h5 className="font-bold text-sm text-slate-300">Horário Livre em Aberto</h5>
+                            <p className="text-xs text-slate-500">IA monitorando solicitações no WhatsApp</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-purple-500/10 text-[#E9D5FF] border border-purple-500/20">
+                          DISPONÍVEL
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* RETAIL VIEW: CRM & Dashboard Financeiro */}
+              {businessModel === 'retail' && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="p-5 rounded-2xl bg-[#111936] border border-slate-800">
+                      <span className="text-xs text-[#E9D5FF]/60 font-medium">Vendas Hoje (IA + Manual)</span>
+                      <p className="text-2xl font-bold text-emerald-400 mt-1">R$ 1.450,00</p>
+                      <span className="text-[10px] text-emerald-400 mt-1 block font-semibold">▲ +18% em relação a ontem</span>
+                    </div>
+                    <div className="p-5 rounded-2xl bg-[#111936] border border-slate-800">
+                      <span className="text-xs text-[#E9D5FF]/60 font-medium">Faturamento Convertido IA</span>
+                      <p className="text-2xl font-bold text-[#FACC15] mt-1">R$ 12.890,00</p>
+                      <span className="text-[10px] text-[#FACC15]/80 mt-1 block">100% BYOAI (R$ 0,00 Custo SaaS)</span>
+                    </div>
+                    <div className="p-5 rounded-2xl bg-[#111936] border border-slate-800">
+                      <span className="text-xs text-[#E9D5FF]/60 font-medium">Origem dos Leads</span>
+                      <p className="text-sm font-bold text-white mt-1">78% WhatsApp • 22% Instagram</p>
+                      <span className="text-[10px] text-[#E9D5FF]/60 mt-1 block">34 conversões esta semana</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pipeline de Vendas Automatizado (CRM)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="p-4 rounded-xl bg-[#090E22] border border-slate-800 space-y-2">
+                        <span className="text-xs font-bold text-[#FACC15] flex items-center justify-between">
+                          <span>Qualificados pela IA</span>
+                          <span className="px-2 py-0.5 rounded bg-[#FACC15]/10 text-[10px]">5</span>
+                        </span>
+                        <div className="p-3 rounded-lg bg-[#111936] border border-slate-800 text-xs">
+                          <span className="font-bold text-white block">Kit Promoção Verão</span>
+                          <span className="text-[10px] text-[#E9D5FF]/60 block font-mono mt-0.5">(11) 99123-4567 • R$ 390,00</span>
                         </div>
                       </div>
-                    ))}
+
+                      <div className="p-4 rounded-xl bg-[#090E22] border border-slate-800 space-y-2">
+                        <span className="text-xs font-bold text-amber-400 flex items-center justify-between">
+                          <span>Aguardando Pagamento</span>
+                          <span className="px-2 py-0.5 rounded bg-amber-400/10 text-[10px]">3</span>
+                        </span>
+                        <div className="p-3 rounded-lg bg-[#111936] border border-slate-800 text-xs">
+                          <span className="font-bold text-white block">Pedido #1089 - PIX</span>
+                          <span className="text-[10px] text-[#E9D5FF]/60 block font-mono mt-0.5">(11) 98765-4321 • R$ 520,00</span>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-[#090E22] border border-slate-800 space-y-2">
+                        <span className="text-xs font-bold text-emerald-400 flex items-center justify-between">
+                          <span>Vendas Concluídas</span>
+                          <span className="px-2 py-0.5 rounded bg-emerald-400/10 text-[10px]">8</span>
+                        </span>
+                        <div className="p-3 rounded-lg bg-[#111936] border border-slate-800 text-xs">
+                          <span className="font-bold text-white block">Combo Varejo Premium</span>
+                          <span className="text-[10px] text-[#E9D5FF]/60 block font-mono mt-0.5">(11) 97777-1111 • R$ 540,00</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </>
+              )}
+
+              {/* DEFAULT VIEW: Carrosséis IA / Instagram */}
+              {!businessModel && (
+                <>
+                  <div className="p-6 rounded-2xl bg-[#111936] border border-[#86198F]/30 backdrop-blur-sm">
+                    <h3 className="text-sm font-medium text-[#FACC15] uppercase tracking-wider mb-2">
+                      Painel de Criação — Carrosséis IA
+                    </h3>
+                    <p className="text-sm text-[#E9D5FF]/80 leading-relaxed">
+                      Gere conteúdos estruturados em slides com base nos dados da empresa e aprove rascunhos antes da publicação.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                      <span className="text-xs text-[#E9D5FF]/60">Posts Pendentes</span>
+                      <p className="text-lg font-bold text-[#FACC15] mt-1">{carousels.length} Rascunhos</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
+                      <span className="text-xs text-[#E9D5FF]/60">Publicados no Mês</span>
+                      <p className="text-lg font-bold text-[#E9D5FF] mt-1">14 Posts</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <button 
+                      onClick={() => setShowCarouselModal(true)}
+                      className="px-5 py-2.5 rounded-xl bg-[#FACC15] text-slate-950 font-bold text-sm hover:bg-[#FDE047] transition-colors shadow-lg shadow-[#FACC15]/10 flex items-center space-x-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Criar Novo Carrossel</span>
+                    </button>
+
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rascunhos Recentes de Carrossel</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {carousels.map((c) => (
+                          <div key={c.id} className="p-4 rounded-xl bg-[#111936] border border-slate-800 flex items-center justify-between">
+                            <div>
+                              <h5 className="font-bold text-sm text-white truncate max-w-[200px]">{c.title}</h5>
+                              <span className="text-xs text-[#E9D5FF]/60">{c.slidesCount} Slides • {c.date}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[10px] font-bold px-2 py-1 rounded bg-[#86198F]/20 text-[#E9D5FF] border border-[#86198F]/40">
+                                PRONTO
+                              </span>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteCarousel(c.id); }}
+                                className="text-slate-500 hover:text-red-400 p-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
             </div>
           )}
         </div>
@@ -1411,6 +1611,9 @@ export default function DashboardMasterWorkspace() {
           </div>
         </div>
       )}
+
+      {/* ONBOARDING MODAL */}
+      <OnboardingModal isOpen={showOnboarding} onSelect={handleSelectBusinessModel} />
 
     </div>
   );

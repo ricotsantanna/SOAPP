@@ -15,12 +15,13 @@ export default function DashboardLayout({
       <header className="h-14 bg-[#070B1B] border-b border-slate-800/80 px-6 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center space-x-3">
           <Link href="/" className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#581C87] to-[#86198F] flex items-center justify-center shadow-md shadow-purple-900/40">
-              <Bot className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-extrabold text-lg tracking-tight text-white">Social One</span>
+            <img 
+              src="/logo-tagline.png" 
+              alt="Social One - IA e Redes Sociais em um só lugar" 
+              className="h-9 object-contain rounded-md py-0.5" 
+            />
           </Link>
-          <span className="text-[10px] uppercase font-bold tracking-widest text-[#FACC15] px-2 py-0.5 rounded-full bg-[#FACC15]/10 border border-[#FACC15]/30">
+          <span className="text-[10px] uppercase font-bold tracking-widest text-[#FACC15] px-2.5 py-0.5 rounded-full bg-[#FACC15]/10 border border-[#FACC15]/30 hidden sm:inline-block">
             Painel Corporativo
           </span>
         </div>

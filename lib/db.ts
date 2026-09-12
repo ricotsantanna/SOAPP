@@ -6,6 +6,8 @@ export interface User {
   email: string;
   password_hash?: string;
   role?: 'admin' | 'user';
+  business_model?: 'service' | 'retail';
+  plan?: 'start' | 'agenda' | 'social' | 'max';
   created_at?: string;
 }
 
@@ -69,9 +71,15 @@ export async function initDb() {
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash TEXT,
         role VARCHAR(20) DEFAULT 'user',
+        business_model VARCHAR(50),
+        plan VARCHAR(50) DEFAULT 'start',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
+
+    // Migration helper for existing databases
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS business_model VARCHAR(50);`.catch(() => {});
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(50) DEFAULT 'start';`.catch(() => {});
 
     await sql`
       CREATE TABLE IF NOT EXISTS user_ai_keys (
@@ -588,5 +596,36 @@ export async function getRecentChatMessages(userId: number, limit: number = 15, 
       filtered = filtered.filter(m => m.remote_jid === remoteJid);
     }
     return filtered.slice(-limit);
+  }
+}
+
+export async function updateUserBusinessModel(userId: number, businessModel: 'service' | 'retail') {
+  try {
+    await sql`UPDATE users SET business_model = ${businessModel} WHERE id = ${userId};`;
+    return { success: true };
+  } catch {
+    const user = inMemoryStore.users.find(u => u.id === userId);
+    if (user) user.business_model = businessModel;
+    return { success: true };
+  }
+}
+
+export async function updateUserPlan(userId: number, plan: 'start' | 'agenda' | 'social' | 'max') {
+  try {
+    await sql`UPDATE users SET plan = ${plan} WHERE id = ${userId};`;
+    return { success: true };
+  } catch {
+    const user = inMemoryStore.users.find(u => u.id === userId);
+    if (user) user.plan = plan;
+    return { success: true };
+  }
+}
+
+export async function getUserProfile(userId: number): Promise<User | undefined> {
+  try {
+    const res = await sql<User>`SELECT id, email, role, business_model, plan, created_at FROM users WHERE id = ${userId};`;
+    return res.rows[0];
+  } catch {
+    return inMemoryStore.users.find(u => u.id === userId);
   }
 }
