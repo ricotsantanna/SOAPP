@@ -241,11 +241,24 @@ export default function DashboardMasterWorkspace() {
           } else {
             setShowOnboarding(true);
           }
-          if (profData.profile?.plan) {
-            setUserPlan(profData.profile.plan);
-          }
         } else {
           setShowOnboarding(true);
+        }
+
+        // Check for Google OAuth Callback query parameters
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('googleAuth') === 'success') {
+            const email = urlParams.get('googleEmail');
+            if (email) {
+              setGoogleCalendarEmail(email);
+              setGoogleCalendarConnected(true);
+              localStorage.setItem('soapp_gcal_email', email);
+              alert(`✅ Autenticação Google concluída com sucesso! A conta (${email}) foi vinculada à sua Agenda Inteligente.`);
+            }
+          }
+          const savedGcalEmail = localStorage.getItem('soapp_gcal_email');
+          if (savedGcalEmail) setGoogleCalendarEmail(savedGcalEmail);
         }
 
         // First, load from localStorage (immediate, works regardless of DB)
