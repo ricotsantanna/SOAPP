@@ -1,6 +1,7 @@
 import { getAIKeys, getWhatsAppInstance, getOrCreateDemoUser, getRecentChatMessages } from '@/lib/db';
 import { decryptApiKey } from '@/lib/encryption';
 import { buildRAGContext, constructSystemPrompt } from '@/lib/rag';
+import { getFreeBusySlots, createCalendarEvent } from '@/lib/googleCalendar';
 
 export async function generateAIReply({
   message,
@@ -19,6 +20,36 @@ export async function generateAIReply({
 }): Promise<{ reply: string; provider: string; ragInjected: boolean }> {
   const user = await getOrCreateDemoUser();
   const uid = user.id || userId;
+
+  // Check if message is related to scheduling / appointments
+  const lowerMsg = message.toLowerCase();
+  const isSchedulingRequest = /agend|marc|horar|consult|vaga|atend/i.test(lowerMsg);
+  let appointmentContext = '';
+
+  if (isSchedulingRequest) {
+    const freeSlots = await getFreeBusySlots(uid);
+    appointmentContext = `\n\n📅 [GOOGLE CALENDAR SSOT - HORÁRIOS DISPONÍVEIS HOJE/AMANHÃ]: ${freeSlots.join(', ')}. Se o cliente solicitar a confirmação de um horário, confirme o agendamento informando que foi sincronizado com o Google Calendar.`;
+
+    // Automatic event creation if user explicitly provided date/time pattern (e.g. "agendar amanha 14:00" or "marcar 15h")
+    const timeMatch = lowerMsg.match(/(\d{1,2})[:h](\d{2})?/i);
+    if ((lowerMsg.includes('agend') || lowerMsg.includes('marc')) && timeMatch) {
+      const hour = parseInt(timeMatch[1], 10);
+      const min = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+      const apptDate = new Date();
+      if (lowerMsg.includes('amanha') || lowerMsg.includes('amanhã')) {
+        apptDate.setDate(apptDate.getDate() + 1);
+      }
+      apptDate.setHours(hour, min, 0, 0);
+
+      await createCalendarEvent({
+        userId: uid,
+        customerName: remoteJid ? remoteJid.split('@')[0] : 'Cliente WhatsApp',
+        customerPhone: remoteJid ? remoteJid.split('@')[0] : '51999998888',
+        serviceName: 'Atendimento / Consulta IA',
+        appointmentTime: apptDate.toISOString(),
+      });
+    }
+  }
 
   // Fetch user AI Keys & Instance Settings
   const userKeys = await getAIKeys(uid);
@@ -60,9 +91,9 @@ export async function generateAIReply({
     }
   }
 
-  // Build System Prompt + RAG Context
+  // Build System Prompt + RAG Context + Appointment Context
   const ragContext = await buildRAGContext(uid, message);
-  const systemPrompt = directSystemPrompt || constructSystemPrompt(instance?.system_prompt, ragContext);
+  const systemPrompt = (directSystemPrompt || constructSystemPrompt(instance?.system_prompt, ragContext)) + appointmentContext;
 
   // Construct message payload with 15-message memory
   const formattedOpenAiMessages = [
