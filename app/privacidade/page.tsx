@@ -11,7 +11,8 @@ import {
   CheckCircle2, 
   Eye, 
   Database,
-  UserCheck
+  UserCheck,
+  Mail
 } from 'lucide-react';
 
 export default function PrivacidadePage() {
