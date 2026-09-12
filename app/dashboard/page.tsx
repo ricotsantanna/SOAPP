@@ -780,7 +780,7 @@ export default function DashboardMasterWorkspace() {
                     {openaiKey && !openaiKey.includes('xxxx') ? (
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3" />
-                        <span>Salva</span>
+                        <span>Ativa</span>
                       </span>
                     ) : (
                       <span className="text-[10px] text-slate-500 font-normal">Pendente</span>
@@ -807,10 +807,10 @@ export default function DashboardMasterWorkspace() {
                     {geminiKey && !geminiKey.includes('xxxx') ? (
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3" />
-                        <span>Salva</span>
+                        <span>Ativa</span>
                       </span>
                     ) : (
-                      <span className="text-[10px] text-emerald-400/80 font-normal">Grátis</span>
+                      <span className="text-[10px] text-slate-500 font-normal">Pendente</span>
                     )}
                   </button>
 
@@ -834,10 +834,10 @@ export default function DashboardMasterWorkspace() {
                     {nvidiaKey && !nvidiaKey.includes('xxxx') ? (
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3" />
-                        <span>Salva</span>
+                        <span>Ativa</span>
                       </span>
                     ) : (
-                      <span className="text-[10px] text-green-400/80 font-normal">10k Créditos</span>
+                      <span className="text-[10px] text-slate-500 font-normal">Pendente</span>
                     )}
                   </button>
 
@@ -861,7 +861,7 @@ export default function DashboardMasterWorkspace() {
                     {claudeKey && !claudeKey.includes('xxxx') ? (
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3" />
-                        <span>Salva</span>
+                        <span>Ativa</span>
                       </span>
                     ) : (
                       <span className="text-[10px] text-slate-500 font-normal">Pendente</span>
