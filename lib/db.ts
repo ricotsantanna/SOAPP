@@ -725,6 +725,8 @@ export async function getAppointments(userId: number): Promise<Appointment[]> {
   }
 }
 
+export const getAppointmentsByUser = getAppointments;
+
 export async function createAppointment(appt: Appointment): Promise<Appointment> {
   try {
     const res = await sql<Appointment>`

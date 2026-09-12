@@ -29,11 +29,11 @@ export async function GET(request: Request) {
       // Trigger message attempt via Evolution API (if connected) or simulate clean success
       try {
         if (appt.customer_phone) {
-          await sendWhatsAppMessage({
-            instanceName: 'socialone_admin',
-            remoteJid: `${appt.customer_phone}@s.whatsapp.net`,
-            text: confirmationMsg,
-          });
+          await sendWhatsAppMessage(
+            'socialone_admin',
+            `${appt.customer_phone}@s.whatsapp.net`,
+            confirmationMsg
+          );
         }
       } catch (e) {
         console.warn('Cron message dispatch notice:', e);
