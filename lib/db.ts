@@ -135,8 +135,8 @@ const inMemoryStore = {
       id: 1,
       user_id: 1,
       instance_name: "socialone_admin",
-      status: "connected" as const,
-      phone_number: "+55 11 99888-7766",
+      status: "disconnected" as const,
+      phone_number: "",
       system_prompt: "Assistente Central Social One",
       user_email: "admin@socialoneapp.com.br"
     },
@@ -144,8 +144,8 @@ const inMemoryStore = {
       id: 2,
       user_id: 2,
       instance_name: "inst_loja_demo",
-      status: "connected" as const,
-      phone_number: "+55 11 91234-5678",
+      status: "disconnected" as const,
+      phone_number: "",
       system_prompt: "Atendente Loja Demo",
       user_email: "cliente.demo@empresa.com.br"
     }

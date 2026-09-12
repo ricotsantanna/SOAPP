@@ -137,7 +137,7 @@ export async function POST(req: Request) {
 
     const saveKeyIfPresent = async (provider: 'openai' | 'gemini' | 'claude' | 'nvidia' | 'custom', keyVal?: string) => {
       if (keyVal !== undefined && keyVal !== null) {
-        const cleanKey = keyVal.trim();
+        const cleanKey = keyVal.trim().replace(/^["']|["']$/g, '');
         if (cleanKey && !cleanKey.includes('xxxx')) {
           const encrypted = encryptApiKey(cleanKey);
           await saveAIKey(userId, provider, encrypted);
@@ -151,27 +151,38 @@ export async function POST(req: Request) {
     await saveKeyIfPresent('nvidia', nvidiaKey);
     await saveKeyIfPresent('custom', customKey);
 
+    const activeKeyMap: Record<string, string | undefined> = {
+      openai: openaiKey,
+      gemini: geminiKey,
+      claude: claudeKey,
+      nvidia: nvidiaKey,
+      custom: customKey
+    };
+    const currentActiveKey = activeKeyMap[activeProvider]?.trim().replace(/^["']|["']$/g, '');
+
     // Validate active provider key
-    if (activeProvider === 'openai' && openaiKey) {
-      const val = await validateOpenAIKey(openaiKey.trim());
+    if (activeProvider === 'openai' && currentActiveKey) {
+      const val = await validateOpenAIKey(currentActiveKey);
       validationNotice = val.valid
         ? '✅ Chave OpenAI validada e salva com sucesso!'
         : `⚠️ Chave OpenAI salva, mas retornou um alerta ao testar: ${val.error}`;
-    } else if (activeProvider === 'gemini' && geminiKey) {
-      const val = await validateGeminiKey(geminiKey.trim());
+    } else if (activeProvider === 'gemini' && currentActiveKey) {
+      const val = await validateGeminiKey(currentActiveKey);
       validationNotice = val.valid
         ? '✅ Chave Google Gemini validada e salva com sucesso!'
         : `⚠️ Chave Google Gemini salva, mas retornou um alerta ao testar: ${val.error}`;
-    } else if (activeProvider === 'claude' && claudeKey) {
-      const val = await validateClaudeKey(claudeKey.trim());
+    } else if (activeProvider === 'claude' && currentActiveKey) {
+      const val = await validateClaudeKey(currentActiveKey);
       validationNotice = val.valid
         ? '✅ Chave Anthropic Claude validada e salva com sucesso!'
         : `⚠️ Chave Claude salva, mas retornou um alerta ao testar: ${val.error}`;
-    } else if (activeProvider === 'nvidia' && nvidiaKey) {
-      const val = await validateNvidiaKey(nvidiaKey.trim());
+    } else if (activeProvider === 'nvidia' && currentActiveKey) {
+      const val = await validateNvidiaKey(currentActiveKey);
       validationNotice = val.valid
         ? '✅ Chave NVIDIA NIM validada e salva com sucesso!'
         : `⚠️ Chave NVIDIA NIM salva, mas retornou um alerta ao testar: ${val.error}`;
+    } else if (!currentActiveKey && activeProvider !== 'custom') {
+      validationNotice = `⚠️ Configurações salvas. Atenção: O provedor ${activeProvider.toUpperCase()} foi selecionado como ativo, mas você ainda não colou uma chave de API para ele.`;
     }
 
     await saveWhatsAppInstance(userId, {
