@@ -18,9 +18,12 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
+import CheckoutMercadoPagoModal from './dashboard/CheckoutMercadoPagoModal';
+
 export default function LandingPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [selectedCheckoutPlan, setSelectedCheckoutPlan] = useState<{ name: string; price: string } | null>(null);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -235,10 +238,11 @@ export default function LandingPage() {
             </div>
 
             <button
-              onClick={() => { setAuthMode('register'); setShowAuthModal(true); }}
-              className="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors"
+              onClick={() => setSelectedCheckoutPlan({ name: 'Start', price: 'R$ 99' })}
+              className="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors flex items-center justify-center space-x-1.5"
             >
-              Começar no Start
+              <span>Assinar Start (Mercado Pago)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -276,10 +280,11 @@ export default function LandingPage() {
             </div>
 
             <button
-              onClick={() => { setAuthMode('register'); setShowAuthModal(true); }}
-              className="w-full py-3.5 rounded-xl bg-[#FACC15] hover:bg-[#FDE047] text-slate-950 font-extrabold text-xs transition-colors shadow-lg shadow-[#FACC15]/20"
+              onClick={() => setSelectedCheckoutPlan({ name: 'Agenda IA', price: 'R$ 149' })}
+              className="w-full py-3.5 rounded-xl bg-[#FACC15] hover:bg-[#FDE047] text-slate-950 font-extrabold text-xs transition-colors shadow-lg shadow-[#FACC15]/20 flex items-center justify-center space-x-1.5"
             >
-              Assinar Agenda IA
+              <span>Assinar Agenda IA (Mercado Pago)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -314,10 +319,11 @@ export default function LandingPage() {
             </div>
 
             <button
-              onClick={() => { setAuthMode('register'); setShowAuthModal(true); }}
-              className="w-full py-3.5 rounded-xl bg-[#86198F] hover:bg-[#a21caf] text-white font-bold text-xs transition-colors"
+              onClick={() => setSelectedCheckoutPlan({ name: 'Social One', price: 'R$ 199' })}
+              className="w-full py-3.5 rounded-xl bg-[#86198F] hover:bg-[#a21caf] text-white font-bold text-xs transition-colors flex items-center justify-center space-x-1.5"
             >
-              Assinar Social One (Full)
+              <span>Assinar Social One (Mercado Pago)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -462,6 +468,21 @@ export default function LandingPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Checkout Mercado Pago Modal */}
+      {selectedCheckoutPlan && (
+        <CheckoutMercadoPagoModal
+          isOpen={!!selectedCheckoutPlan}
+          onClose={() => setSelectedCheckoutPlan(null)}
+          planName={selectedCheckoutPlan.name}
+          planPrice={selectedCheckoutPlan.price}
+          onPaymentConfirmed={() => {
+            setSelectedCheckoutPlan(null);
+            setAuthMode('register');
+            setShowAuthModal(true);
+          }}
+        />
       )}
     </div>
   );
