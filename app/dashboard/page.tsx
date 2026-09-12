@@ -31,6 +31,7 @@ import {
   Check
 } from 'lucide-react';
 import OnboardingModal from './OnboardingModal';
+import UpgradeModal from './UpgradeModal';
 
 const WhatsAppBrandIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -47,7 +48,9 @@ const InstagramBrandIcon = ({ className = "w-5 h-5" }: { className?: string }) =
 export default function DashboardMasterWorkspace() {
   const [active, setActive] = useState<'whatsapp' | 'instagram' | 'knowledge' | 'settings'>('whatsapp');
   const [businessModel, setBusinessModel] = useState<'service' | 'retail' | null>(null);
+  const [userPlan, setUserPlan] = useState<'start' | 'agenda' | 'social' | 'max'>('start');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // --- WHATSAPP STATE ---
   const [waStatus, setWaStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
@@ -129,6 +132,9 @@ export default function DashboardMasterWorkspace() {
             setBusinessModel(profData.profile.business_model);
           } else {
             setShowOnboarding(true);
+          }
+          if (profData.profile?.plan) {
+            setUserPlan(profData.profile.plan);
           }
         } else {
           setShowOnboarding(true);
@@ -564,6 +570,19 @@ export default function DashboardMasterWorkspace() {
     }
   };
 
+  const handleSelectPlan = async (plan: 'start' | 'agenda' | 'social' | 'max') => {
+    setUserPlan(plan);
+    try {
+      await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: 1, plan }),
+      });
+    } catch (err) {
+      console.error('Error updating user plan:', err);
+    }
+  };
+
   const handleSelectBusinessModel = async (model: 'service' | 'retail') => {
     setBusinessModel(model);
     setShowOnboarding(false);
@@ -605,10 +624,24 @@ export default function DashboardMasterWorkspace() {
               <WhatsAppBrandIcon className="w-5 h-5 text-[#25D366]" />
             </div>
             {active === 'whatsapp' && (
-              <div>
-                <h2 className="text-lg font-bold tracking-wide text-white">WhatsApp</h2>
-                <p className="text-xs text-[#E9D5FF]">Atendimento IA & Instâncias</p>
-              </div>
+              <>
+                <div>
+                  <h2 className="text-lg font-bold tracking-wide text-white">WhatsApp</h2>
+                  <p className="text-xs text-[#E9D5FF]">Atendimento IA & Instâncias</p>
+                </div>
+                <div className="flex items-center space-x-2 ml-4">
+                  <div className="px-3 py-1 rounded-full bg-[#86198F]/20 border border-[#86198F]/40 text-[#E9D5FF] text-xs font-bold capitalize">
+                    Plano {userPlan}
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowUpgradeModal(true); }}
+                    className="px-3 py-1 rounded-full bg-[#FACC15] text-slate-950 text-xs font-extrabold hover:bg-[#FDE047] transition-all flex items-center space-x-1"
+                  >
+                    <Sparkles className="w-3 h-3 text-slate-950" />
+                    <span>Upgrade</span>
+                  </button>
+                </div>
+              </>
             )}
           </div>
           {active !== 'whatsapp' && (
@@ -1688,6 +1721,14 @@ export default function DashboardMasterWorkspace() {
 
       {/* ONBOARDING MODAL */}
       <OnboardingModal isOpen={showOnboarding} onSelect={handleSelectBusinessModel} />
+
+      {/* UPGRADE MODAL */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal} 
+        onClose={() => setShowUpgradeModal(false)} 
+        currentPlan={userPlan} 
+        onSelectPlan={handleSelectPlan} 
+      />
 
     </div>
   );
