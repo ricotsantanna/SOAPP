@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getWhatsAppInstance, saveWhatsAppInstance } from '@/lib/db';
 import { fetchQrCode, sendWhatsAppMessage, getInstanceStatus } from '@/lib/evolution';
-import { generateAIReply } from '@/app/api/ai/chat/route';
+import { generateAIReply } from '@/lib/ai';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
