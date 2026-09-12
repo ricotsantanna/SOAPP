@@ -29,7 +29,7 @@ export default function DashboardMasterWorkspace() {
 
   // --- WHATSAPP STATE ---
   const [waStatus, setWaStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connected');
-  const [waMessagesCount, setWaMessagesCount] = useState(1248);
+  const [waMessagesCount, setWaMessagesCount] = useState(0);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [qrError, setQrError] = useState<string | null>(null);
   const [showQrModal, setShowQrModal] = useState(false);
@@ -52,6 +52,7 @@ export default function DashboardMasterWorkspace() {
   const [uploadingPdf, setUploadingPdf] = useState(false);
 
   // --- SETTINGS (BYOAI) STATE ---
+  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'gemini'>('openai');
   const [openaiKey, setOpenaiKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
@@ -59,7 +60,7 @@ export default function DashboardMasterWorkspace() {
   const [systemPrompt, setSystemPrompt] = useState(
     'Você é o assistente virtual oficial da empresa. Atenda os clientes via WhatsApp com máxima cordialidade e responda com base nos documentos da base de conhecimento.'
   );
-  const [activeProviderText, setActiveProviderText] = useState('Sem Chave (Demo)');
+  const [activeProviderText, setActiveProviderText] = useState('OpenAI (GPT-4o)');
   const [savedSettingsMsg, setSavedSettingsMsg] = useState(false);
 
   // Load initial settings, files, and carousels from API on mount
@@ -73,7 +74,11 @@ export default function DashboardMasterWorkspace() {
           if (sData.openaiKey) setOpenaiKey(sData.openaiKey);
           if (sData.geminiKey) setGeminiKey(sData.geminiKey);
           if (sData.systemPrompt) setSystemPrompt(sData.systemPrompt);
-          if (sData.activeProvider) setActiveProviderText(sData.activeProvider);
+          if (sData.activeProvider) {
+            const prov = sData.activeProvider === 'gemini' ? 'gemini' : 'openai';
+            setSelectedProvider(prov);
+            setActiveProviderText(prov === 'gemini' ? 'Google Gemini 1.5 Flash' : 'OpenAI (GPT-4o)');
+          }
         }
 
         // Load Knowledge Base
@@ -132,7 +137,7 @@ export default function DashboardMasterWorkspace() {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText, userId: 1 }),
+        body: JSON.stringify({ message: userText, userId: 1, providerPreference: selectedProvider }),
       });
       const data = await res.json();
       setChatMessages(prev => [...prev, { sender: 'ai', text: data.reply || 'Sem resposta.' }]);
@@ -247,11 +252,17 @@ export default function DashboardMasterWorkspace() {
       const res = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 1, openaiKey, geminiKey, systemPrompt }),
+        body: JSON.stringify({
+          userId: 1,
+          openaiKey,
+          geminiKey,
+          systemPrompt,
+          activeProvider: selectedProvider
+        }),
       });
       if (res.ok) {
         setSavedSettingsMsg(true);
-        setActiveProviderText(openaiKey.trim() ? 'OpenAI (GPT-4o)' : geminiKey.trim() ? 'Google Gemini' : 'Demonstração');
+        setActiveProviderText(selectedProvider === 'gemini' ? 'Google Gemini 1.5 Flash' : 'OpenAI (GPT-4o)');
         setTimeout(() => setSavedSettingsMsg(false), 3500);
       }
     } catch (error) {
@@ -318,9 +329,13 @@ export default function DashboardMasterWorkspace() {
                 <div className="p-4 rounded-xl bg-[#111936] border border-slate-800 flex items-center justify-between">
                   <div>
                     <span className="text-xs text-[#E9D5FF]/60">Status da Conexão</span>
-                    <p className="text-lg font-bold text-emerald-400 mt-1 flex items-center space-x-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Conectado</span>
+                    <p className={`text-lg font-bold mt-1 flex items-center space-x-2 ${
+                      waStatus === 'connected' ? 'text-emerald-400' : waStatus === 'connecting' ? 'text-amber-400' : 'text-rose-400'
+                    }`}>
+                      <span className={`w-2.5 h-2.5 rounded-full ${
+                        waStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : waStatus === 'connecting' ? 'bg-amber-400 animate-ping' : 'bg-rose-500'
+                      }`} />
+                      <span className="capitalize">{waStatus === 'connected' ? 'Conectado' : waStatus === 'connecting' ? 'Conectando...' : 'Desconectado'}</span>
                     </p>
                   </div>
                   <button 
@@ -699,6 +714,43 @@ export default function DashboardMasterWorkspace() {
 
               {/* Settings Form */}
               <form onSubmit={handleSaveSettings} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">Provedor de IA Ativo</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProvider('openai')}
+                      className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-between ${
+                        selectedProvider === 'openai' 
+                          ? 'bg-[#581C87]/40 border-[#86198F] text-white shadow-lg shadow-purple-950/40' 
+                          : 'bg-[#111936] border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Sparkles className="w-4 h-4 text-[#FACC15]" />
+                        <span>OpenAI (GPT-4o)</span>
+                      </div>
+                      {selectedProvider === 'openai' && <CheckCircle2 className="w-4 h-4 text-[#FACC15]" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProvider('gemini')}
+                      className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-between ${
+                        selectedProvider === 'gemini' 
+                          ? 'bg-[#581C87]/40 border-[#86198F] text-white shadow-lg shadow-purple-950/40' 
+                          : 'bg-[#111936] border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Bot className="w-4 h-4 text-[#FACC15]" />
+                        <span>Google Gemini</span>
+                      </div>
+                      {selectedProvider === 'gemini' && <CheckCircle2 className="w-4 h-4 text-[#FACC15]" />}
+                    </button>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">Chave de API OpenAI (BYOAI)</label>
                   <div className="relative">

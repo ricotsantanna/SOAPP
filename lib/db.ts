@@ -24,6 +24,7 @@ export interface WhatsAppInstance {
   status: 'connected' | 'disconnected' | 'connecting';
   phone_number?: string;
   system_prompt?: string;
+  active_provider?: 'openai' | 'gemini';
   user_email?: string;
 }
 
@@ -78,7 +79,8 @@ export async function initDb() {
         instance_name VARCHAR(100) NOT NULL,
         status VARCHAR(50) DEFAULT 'disconnected',
         phone_number VARCHAR(50),
-        system_prompt TEXT
+        system_prompt TEXT,
+        active_provider VARCHAR(50) DEFAULT 'openai'
       );
     `;
 
@@ -293,13 +295,14 @@ export async function saveWhatsAppInstance(userId: number, data: Partial<WhatsAp
           instance_name = ${data.instance_name || existing.instance_name},
           status = ${data.status || existing.status},
           phone_number = ${data.phone_number || existing.phone_number},
-          system_prompt = ${data.system_prompt !== undefined ? data.system_prompt : existing.system_prompt}
+          system_prompt = ${data.system_prompt !== undefined ? data.system_prompt : existing.system_prompt},
+          active_provider = ${data.active_provider || existing.active_provider || 'openai'}
         WHERE id = ${existing.id};
       `;
     } else {
       await sql`
-        INSERT INTO whatsapp_instances (user_id, instance_name, status, phone_number, system_prompt)
-        VALUES (${userId}, ${data.instance_name || 'socialone_inst'}, ${data.status || 'disconnected'}, ${data.phone_number || ''}, ${data.system_prompt || ''});
+        INSERT INTO whatsapp_instances (user_id, instance_name, status, phone_number, system_prompt, active_provider)
+        VALUES (${userId}, ${data.instance_name || 'socialone_inst'}, ${data.status || 'disconnected'}, ${data.phone_number || ''}, ${data.system_prompt || ''}, ${data.active_provider || 'openai'});
       `;
     }
     return { success: true };

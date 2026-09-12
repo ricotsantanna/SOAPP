@@ -16,12 +16,13 @@ export async function GET(req: Request) {
     const openaiKey = openaiObj ? decryptApiKey(openaiObj.encrypted_api_key) : '';
     const geminiKey = geminiObj ? decryptApiKey(geminiObj.encrypted_api_key) : '';
     const systemPrompt = instance?.system_prompt || 'Você é o assistente virtual oficial da empresa. Atenda os clientes via WhatsApp com máxima cordialidade e responda com base nos documentos da base de conhecimento.';
+    const activeProvider = instance?.active_provider || (openaiKey ? 'openai' : geminiKey ? 'gemini' : 'openai');
 
     return NextResponse.json({
       openaiKey,
       geminiKey,
       systemPrompt,
-      activeProvider: openaiKey ? 'OpenAI (GPT-4o)' : geminiKey ? 'Google Gemini' : 'Demonstração',
+      activeProvider,
     });
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { userId = 1, openaiKey, geminiKey, systemPrompt } = body;
+    const { userId = 1, openaiKey, geminiKey, systemPrompt, activeProvider } = body;
 
     if (openaiKey !== undefined && openaiKey !== null) {
       const encryptedOpenai = encryptApiKey(openaiKey.trim());
@@ -44,9 +45,10 @@ export async function POST(req: Request) {
       await saveAIKey(userId, 'gemini', encryptedGemini);
     }
 
-    if (systemPrompt !== undefined) {
-      await saveWhatsAppInstance(userId, { system_prompt: systemPrompt });
-    }
+    await saveWhatsAppInstance(userId, {
+      system_prompt: systemPrompt,
+      active_provider: activeProvider || 'openai'
+    });
 
     return NextResponse.json({ success: true, message: 'Configurações salvas e criptografadas com sucesso!' });
   } catch (error) {
