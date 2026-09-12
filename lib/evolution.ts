@@ -246,16 +246,18 @@ export async function logoutInstance(instanceName: string = 'socialone_default')
 /**
  * Sends a text message via WhatsApp using the Easypanel Evolution API.
  */
-export async function sendWhatsAppMessage(instanceName: string = 'socialone_default', remoteJid: string, text: string) {
+export async function sendWhatsAppMessage(instanceName: string = 'socialone_admin', remoteJid: string, text: string) {
   const baseUrl = getEvolutionBaseUrl();
   const headers = getHeaders();
+  const cleanNumber = remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');
 
   try {
     const res = await fetch(`${baseUrl}/message/sendText/${instanceName}`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        number: remoteJid,
+        number: cleanNumber,
+        text: text,
         options: {
           delay: 1200,
           presence: 'composing',

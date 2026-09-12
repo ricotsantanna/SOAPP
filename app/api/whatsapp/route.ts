@@ -122,14 +122,15 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // Log incoming webhook event
-    const event = body?.event || body?.type;
-    const instanceName = body?.instance || body?.instanceName || 'socialone_default';
+    const event = body?.event || body?.type || '';
+    const instanceName = body?.instance || body?.instanceName || 'socialone_admin';
     const data = body?.data || body;
 
     console.log(`[Evolution Webhook Received] Event: ${event} on Instance: ${instanceName}`);
 
     // Update connection status
-    if (event === 'connection.update' || event === 'CONNECTION_UPDATE') {
+    const eventUpper = String(event).toUpperCase();
+    if (eventUpper.includes('CONNECTION') || eventUpper.includes('STATE')) {
       const state = data?.state || data?.instance?.state;
       if (state) {
         const status = state === 'open' ? 'connected' : state === 'connecting' ? 'connecting' : 'disconnected';
@@ -138,14 +139,14 @@ export async function POST(req: Request) {
     }
 
     // Process Incoming Messages
-    if (event === 'messages.upsert' || event === 'MESSAGES_UPSERT' || event === 'messages.update') {
-      const msgObj = Array.isArray(data) ? data[0] : (data?.message ? data : data?.data);
+    if (eventUpper.includes('MESSAGES') || eventUpper.includes('SEND_MESSAGE')) {
+      const msgObj = Array.isArray(data) ? data[0] : (data?.message ? data : data?.data || data);
       
       const key = msgObj?.key || msgObj?.message?.key;
       const remoteJid = key?.remoteJid || msgObj?.remoteJid;
       const isFromMe = key?.fromMe === true || key?.fromMe === 'true';
 
-      // Avoid replying to self / system messages
+      // Avoid replying to self / group messages
       if (remoteJid && !isFromMe && !remoteJid.includes('@g.us')) {
         const messageContent = msgObj?.message || msgObj;
         const text = 
@@ -153,30 +154,16 @@ export async function POST(req: Request) {
           messageContent?.extendedTextMessage?.text ||
           messageContent?.imageMessage?.caption ||
           messageContent?.videoMessage?.caption ||
-          messageContent?.documentMessage?.caption;
+          messageContent?.documentMessage?.caption ||
+          (typeof messageContent === 'string' ? messageContent : '');
 
         if (text && text.trim()) {
           console.log(`[WhatsApp Incoming Message] From: ${remoteJid} -> Text: "${text}"`);
 
-          // Read active provider and API key directly from env vars (no DB needed)
-          const activeProvider = process.env.AI_ACTIVE_PROVIDER || 'openai';
-          const envKeyMap: Record<string, string | undefined> = {
-            openai: process.env.OPENAI_API_KEY,
-            gemini: process.env.GEMINI_API_KEY,
-            claude: process.env.CLAUDE_API_KEY,
-            nvidia: process.env.NVIDIA_API_KEY,
-            custom: process.env.CUSTOM_API_KEY,
-          };
-          const directApiKey = envKeyMap[activeProvider] || '';
-          const directSystemPrompt = process.env.AI_SYSTEM_PROMPT;
-
-          // Directly call AI generation engine with RAG context
+          // Call AI generation engine - automatically reads active provider & key from DB
           const aiResult = await generateAIReply({ 
             message: text, 
-            userId: 1, 
-            providerPreference: activeProvider,
-            apiKey: directApiKey || undefined,
-            systemPrompt: directSystemPrompt || undefined,
+            userId: 1,
           });
           console.log(`[WhatsApp AI Response] Generated via ${aiResult.provider}: "${aiResult.reply.substring(0, 50)}..."`);
 
