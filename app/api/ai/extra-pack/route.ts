@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { acceptExtraPackage, getOrCreateDemoUser } from '@/lib/db';
+import { acceptExtraPackage } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    const user = await getOrCreateDemoUser();
+    const user = await getAuthenticatedUser(req);
     const result = await acceptExtraPackage(user.id);
 
     return NextResponse.json({

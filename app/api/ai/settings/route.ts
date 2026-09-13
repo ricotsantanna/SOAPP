@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getAISettings, updateAISettings, getOrCreateDemoUser } from '@/lib/db';
+import { getAISettings, updateAISettings } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const user = await getOrCreateDemoUser();
+    const user = await getAuthenticatedUser(req);
     const settings = await getAISettings(user.id);
     return NextResponse.json({ success: true, settings });
   } catch (error: any) {
@@ -13,7 +14,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const user = await getOrCreateDemoUser();
+    const user = await getAuthenticatedUser(req);
     const body = await req.json();
 
     const updated = await updateAISettings(user.id, {

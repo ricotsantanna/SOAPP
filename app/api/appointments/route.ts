@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getAppointments, createAppointment, updateAppointmentStatus } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = Number(searchParams.get('userId') || 1);
-
-    const appointments = await getAppointments(userId);
+    const user = await getAuthenticatedUser(req);
+    const appointments = await getAppointments(user.id);
     return NextResponse.json({ success: true, appointments });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -15,8 +14,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const user = await getAuthenticatedUser(req);
     const body = await req.json();
-    const { userId = 1, customerName, customerPhone, serviceName, appointmentTime } = body;
+    const { customerName, customerPhone, serviceName, appointmentTime } = body;
 
     if (!customerName || !customerPhone || !serviceName || !appointmentTime) {
       return NextResponse.json({ success: false, error: 'Campos obrigatórios ausentes' }, { status: 400 });
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const googleEventId = `gcal_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     const newAppt = await createAppointment({
-      user_id: userId,
+      user_id: user.id,
       customer_name: customerName,
       customer_phone: customerPhone,
       service_name: serviceName,

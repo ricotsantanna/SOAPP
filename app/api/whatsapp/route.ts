@@ -2,14 +2,17 @@ import { NextResponse } from 'next/server';
 import { getWhatsAppInstance, saveWhatsAppInstance, saveChatMessage, isBotPaused } from '@/lib/db';
 import { fetchQrCode, sendWhatsAppMessage, getInstanceStatus, logoutInstance } from '@/lib/evolution';
 import { generateAIReply } from '@/lib/ai';
+import { getAuthenticatedUser } from '@/lib/session';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const action = searchParams.get('action');
-  const userId = Number(searchParams.get('userId') || 1);
+
+  const user = await getAuthenticatedUser(req);
+  const userId = user.id;
 
   const instance = await getWhatsAppInstance(userId);
-  const instanceName = instance?.instance_name || 'socialone_default';
+  const instanceName = instance?.instance_name || (userId === 1 ? 'socialone_admin' : `inst_user_${userId}`);
 
   if (action === 'logout') {
     const logoutRes = await logoutInstance(instanceName);
