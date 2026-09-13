@@ -29,11 +29,13 @@ export default function Header({ onOpenAuth }: HeaderProps) {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Official Image Logo & Title */}
         <Link href="/" className="flex items-center space-x-3 group">
-          <img 
-            src="/logo-icon.png" 
-            alt="Social One Logo" 
-            className="h-10 w-10 object-contain group-hover:scale-105 transition-transform duration-300 filter drop-shadow-[0_0_10px_rgba(134,25,143,0.5)]"
-          />
+          <div className="bg-white/95 px-2 py-1 rounded-xl flex items-center justify-center shadow-lg shadow-purple-950/40 border border-white/20 group-hover:scale-105 transition-transform duration-300">
+            <img 
+              src="/logo-icon.png" 
+              alt="Social One Logo" 
+              className="h-8 w-8 object-contain"
+            />
+          </div>
           <div className="flex items-center">
             <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-brand-lavender">
               Social One

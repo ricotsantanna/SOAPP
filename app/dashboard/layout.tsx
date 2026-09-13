@@ -60,11 +60,13 @@ export default function DashboardLayout({
       <header className="h-14 bg-[#070B1B] border-b border-slate-800/80 px-6 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center space-x-3">
           <Link href="/" className="flex items-center space-x-3 group">
-            <img 
-              src="/logo-icon.png" 
-              alt="Social One" 
-              className="h-9 w-9 object-contain group-hover:scale-105 transition-transform" 
-            />
+            <div className="bg-white/95 px-2 py-0.5 rounded-lg flex items-center justify-center shadow-md border border-white/20 group-hover:scale-105 transition-transform">
+              <img 
+                src="/logo-icon.png" 
+                alt="Social One" 
+                className="h-7 w-7 object-contain" 
+              />
+            </div>
             <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-purple-300">
               Social One
             </span>
