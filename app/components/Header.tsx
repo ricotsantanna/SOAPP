@@ -6,7 +6,8 @@ import {
   Sparkles, 
   ArrowRight, 
   Menu, 
-  X 
+  X,
+  Bot
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -27,14 +28,10 @@ export default function Header({ onOpenAuth }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/85 border-b border-brand-violet/20 px-4 sm:px-8 py-3 transition-all">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Official Image Logo & Title */}
+        {/* Original Vector Logo & Title */}
         <Link href="/" className="flex items-center space-x-3 group">
-          <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-slate-900/90 border border-brand-violet/40 p-1 flex items-center justify-center shadow-lg shadow-brand-violet/20 group-hover:scale-105 transition-transform duration-300">
-            <img 
-              src="/logo.png" 
-              alt="Social One Logo" 
-              className="w-full h-full object-contain"
-            />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-violet via-brand-magenta to-brand-amber flex items-center justify-center shadow-lg shadow-brand-violet/30 group-hover:scale-105 transition-transform duration-300">
+            <Bot className="w-6 h-6 text-white" />
           </div>
           <div className="flex items-center">
             <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-brand-lavender">
