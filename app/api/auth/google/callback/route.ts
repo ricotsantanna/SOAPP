@@ -14,9 +14,8 @@ export async function GET(request: Request) {
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.NEXTAUTH_URL 
-      ? `${process.env.NEXTAUTH_URL}/api/auth/google/callback` 
-      : 'https://www.socialoneapp.com.br/api/auth/google/callback';
+    const urlObj = new URL(request.url);
+    const redirectUri = `${urlObj.origin}/api/auth/google/callback`;
 
     if (!clientId || !clientSecret) {
       return NextResponse.redirect(new URL('/?googleAuth=missing_keys', request.url));

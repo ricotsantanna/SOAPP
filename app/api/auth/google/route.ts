@@ -5,9 +5,8 @@ export async function GET(request: Request) {
   const action = searchParams.get('action');
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri = process.env.NEXTAUTH_URL 
-    ? `${process.env.NEXTAUTH_URL}/api/auth/google/callback` 
-    : 'https://www.socialoneapp.com.br/api/auth/google/callback';
+  const urlObj = new URL(request.url);
+  const redirectUri = `${urlObj.origin}/api/auth/google/callback`;
 
   if (!clientId) {
     return NextResponse.json({
