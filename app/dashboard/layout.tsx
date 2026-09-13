@@ -59,12 +59,15 @@ export default function DashboardLayout({
       {/* Top Bar Navigation */}
       <header className="h-14 bg-[#070B1B] border-b border-slate-800/80 px-6 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center space-x-3">
-          <Link href="/" className="flex items-center space-x-2.5">
+          <Link href="/" className="flex items-center space-x-3 group">
             <img 
-              src="/logo-tagline.png" 
-              alt="Social One - IA e Redes Sociais em um só lugar" 
-              className="h-9 object-contain rounded-md py-0.5" 
+              src="/logo-icon.png" 
+              alt="Social One" 
+              className="h-9 w-9 object-contain group-hover:scale-105 transition-transform" 
             />
+            <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-purple-300">
+              Social One
+            </span>
           </Link>
           <span className="text-[10px] uppercase font-bold tracking-widest text-[#FACC15] px-2.5 py-0.5 rounded-full bg-[#FACC15]/10 border border-[#FACC15]/30 hidden sm:inline-block">
             Painel Corporativo
