@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getOrCreateDemoUser } from '@/lib/db';
+import { createSessionToken } from '@/lib/auth';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -6,7 +8,7 @@ export async function GET(request: Request) {
   const error = searchParams.get('error');
 
   if (error || !code) {
-    return NextResponse.redirect(new URL('/dashboard?googleAuth=error', request.url));
+    return NextResponse.redirect(new URL('/?googleAuth=error', request.url));
   }
 
   try {
@@ -17,7 +19,7 @@ export async function GET(request: Request) {
       : 'https://www.socialoneapp.com.br/api/auth/google/callback';
 
     if (!clientId || !clientSecret) {
-      return NextResponse.redirect(new URL('/dashboard?googleAuth=missing_keys', request.url));
+      return NextResponse.redirect(new URL('/?googleAuth=missing_keys', request.url));
     }
 
     // Exchange authorization code for OAuth tokens
@@ -40,17 +42,26 @@ export async function GET(request: Request) {
         headers: { Authorization: `Bearer ${tokens.access_token}` }
       });
       const userInfo = await userRes.json();
+      const googleEmail = userInfo.email || 'user@google.com';
 
-      // Redirect back to dashboard with success and email
-      const targetUrl = new URL('/dashboard', request.url);
-      targetUrl.searchParams.set('googleAuth', 'success');
-      targetUrl.searchParams.set('googleEmail', userInfo.email || '');
-      return NextResponse.redirect(targetUrl);
+      // Get or create user account in database for Google user
+      const user = await getOrCreateDemoUser(googleEmail);
+      const token = createSessionToken(user.id, user.email, user.role || 'user');
+
+      const response = NextResponse.redirect(new URL('/dashboard', request.url));
+      response.cookies.set('socialone_session', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/',
+      });
+
+      return response;
     }
 
-    return NextResponse.redirect(new URL('/dashboard?googleAuth=token_error', request.url));
+    return NextResponse.redirect(new URL('/?googleAuth=token_error', request.url));
   } catch (err) {
     console.error('Google OAuth callback error:', err);
-    return NextResponse.redirect(new URL('/dashboard?googleAuth=exception', request.url));
+    return NextResponse.redirect(new URL('/?googleAuth=exception', request.url));
   }
 }

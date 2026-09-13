@@ -99,26 +99,9 @@ export default function LandingPage() {
           </span>
         </h1>
 
-        <p className="text-lg sm:text-xl text-slate-300 max-w-3xl mb-10 leading-relaxed">
+        <p className="text-lg sm:text-xl text-slate-300 max-w-3xl mb-12 leading-relaxed">
           Descomplique a automação corporativa e o atendimento ao cliente, transformando canais de mensagens em centrais inteligentes movidas a inteligência artificial — com autonomia total de custos no modelo <strong className="text-brand-amber">Bring Your Own AI (BYOAI)</strong>.
         </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full max-w-md mb-12">
-          <button
-            onClick={() => { setAuthMode('register'); setShowAuthModal(true); }}
-            className="w-full sm:w-auto bg-brand-amber text-slate-950 font-extrabold text-base px-8 py-4 rounded-xl hover:bg-yellow-400 transition-all transform hover:scale-105 shadow-xl shadow-brand-amber/25 flex items-center justify-center space-x-3"
-          >
-            <span>Criar Minha Conta</span>
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => { setAuthMode('login'); setAuthError(''); setShowAuthModal(true); }}
-            className="w-full sm:w-auto glass-panel text-brand-lavender font-semibold text-base px-8 py-4 rounded-xl hover:border-brand-violet/60 transition-all flex items-center justify-center space-x-2 border border-brand-violet/40"
-          >
-            <Lock className="w-5 h-5 text-brand-amber" />
-            <span>Entrar na Minha Conta</span>
-          </button>
-        </div>
 
         {/* Feature Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl text-left">
@@ -464,7 +447,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => {
-                window.location.href = '/dashboard';
+                window.location.href = '/api/auth/google';
               }}
               className="w-full bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-200 font-bold py-3 px-4 rounded-xl flex items-center justify-center space-x-3 transition-all mb-4 shadow-sm"
             >

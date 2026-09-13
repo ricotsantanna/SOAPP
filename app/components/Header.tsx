@@ -86,15 +86,15 @@ export default function Header({ onOpenAuth }: HeaderProps) {
         <div className="hidden sm:flex items-center space-x-3">
           <button
             onClick={() => handleAuthClick('login')}
-            className="text-xs font-semibold text-slate-300 hover:text-white px-4 py-2.5 rounded-xl hover:bg-white/5 transition-colors"
+            className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2.5 rounded-xl border border-slate-700/60 hover:border-brand-violet/50 hover:bg-slate-900/60 transition-all"
           >
-            Entrar
+            Entrar na minha conta
           </button>
           <button
             onClick={() => handleAuthClick('register')}
-            className="bg-gradient-to-r from-brand-violet to-brand-magenta text-white font-bold px-5 py-2.5 rounded-xl hover:opacity-90 transition-all transform hover:scale-105 shadow-lg shadow-brand-violet/25 flex items-center space-x-2 text-xs"
+            className="bg-brand-amber text-slate-950 font-extrabold px-5 py-2.5 rounded-xl hover:bg-yellow-400 transition-all transform hover:scale-105 shadow-lg shadow-brand-amber/20 flex items-center space-x-2 text-xs"
           >
-            <span>Testar Agora</span>
+            <span>Criar conta</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -159,15 +159,15 @@ export default function Header({ onOpenAuth }: HeaderProps) {
           <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
             <button
               onClick={() => { setMobileMenuOpen(false); handleAuthClick('login'); }}
-              className="w-full py-2.5 rounded-xl bg-slate-800 text-slate-200 font-semibold text-xs text-center"
+              className="w-full py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs text-center"
             >
-              Entrar
+              Entrar na minha conta
             </button>
             <button
               onClick={() => { setMobileMenuOpen(false); handleAuthClick('register'); }}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-violet to-brand-magenta text-white font-bold text-xs flex items-center justify-center space-x-2"
+              className="w-full py-3 rounded-xl bg-brand-amber text-slate-950 font-extrabold text-xs flex items-center justify-center space-x-2 shadow-md shadow-brand-amber/20"
             >
-              <span>Testar Agora Grátis</span>
+              <span>Criar conta</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
