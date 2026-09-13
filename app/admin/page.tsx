@@ -26,10 +26,10 @@ interface Stats {
 
 export default function AdminOverview() {
   const [stats, setStats] = useState<Stats>({
-    totalUsers: 4,
-    activeInstances: 2,
-    totalDocuments: 8,
-    messagesProcessedToday: 4892,
+    totalUsers: 0,
+    activeInstances: 0,
+    totalDocuments: 0,
+    messagesProcessedToday: 0,
     evolutionApiStatus: 'ONLINE',
     byoaiInferenceCostSaaS: 'R$ 0,00',
   });

@@ -222,72 +222,18 @@ export async function initDb() {
 }
 
 // In-memory mock store fallback for seamless UI development without database connection
-const DEFAULT_ADMIN_HASH = hashPassword("admin123456");
-const DEFAULT_USER_HASH = hashPassword("12345678");
 const DEFAULT_CHECK_HASH = hashPassword("Brasil@25");
 
 const inMemoryStore = {
   users: [
-    { id: 1, email: "admin@socialoneapp.com.br", password_hash: DEFAULT_ADMIN_HASH, role: "admin" as const, plan: "max" as const, created_at: new Date().toISOString() },
-    { id: 2, email: "cliente.demo@empresa.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
-    { id: 3, email: "contato@lojadetalhes.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 7).toISOString() },
-    { id: 4, email: "suporte@techcorp.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 12).toISOString() },
-    { id: 5, email: "checknextip@gmail.com", password_hash: DEFAULT_CHECK_HASH, role: "admin" as const, plan: "max" as const, created_at: new Date().toISOString() }
+    { id: 1, email: "checknextip@gmail.com", password_hash: DEFAULT_CHECK_HASH, role: "admin" as const, plan: "max" as const, created_at: new Date().toISOString() }
   ] as User[],
   aiKeys: [] as UserAIKey[],
-  instances: [
-    {
-      id: 1,
-      user_id: 1,
-      instance_name: "socialone_admin",
-      status: "disconnected" as const,
-      phone_number: "",
-      system_prompt: "Assistente Central Social One",
-      user_email: "admin@socialoneapp.com.br"
-    },
-    {
-      id: 2,
-      user_id: 2,
-      instance_name: "inst_loja_demo",
-      status: "disconnected" as const,
-      phone_number: "",
-      system_prompt: "Atendente Loja Demo",
-      user_email: "cliente.demo@empresa.com.br"
-    }
-  ] as WhatsAppInstance[],
-  knowledgeFiles: [
-    { id: 1, user_id: 1, file_name: "Catalogo_Oficial_2026.pdf", file_type: "pdf" as const, created_at: new Date().toISOString() },
-    { id: 2, user_id: 2, file_name: "FAQ_Atendimento.pdf", file_type: "pdf" as const, created_at: new Date().toISOString() }
-  ] as KnowledgeFile[],
-  carousels: [
-    { id: 1, user_id: 1, title: '5 Dicas para Automatizar seu Atendimento', slides_count: 5, date: 'Hoje' },
-    { id: 2, user_id: 1, title: 'Por que o modelo BYOAI economiza até 90%?', slides_count: 4, date: 'Ontem' }
-  ] as Carousel[],
+  instances: [] as WhatsAppInstance[],
+  knowledgeFiles: [] as KnowledgeFile[],
+  carousels: [] as Carousel[],
   chatMessages: [] as ChatMessage[],
-  appointments: [
-    {
-      id: 1,
-      user_id: 1,
-      customer_name: 'Ana Paula Souza',
-      customer_phone: '51998877665',
-      service_name: 'Consulta Estética Avançada',
-      appointment_time: new Date(Date.now() + 18 * 3600 * 1000).toISOString(),
-      status: 'scheduled',
-      google_event_id: 'evt_demo_101',
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 2,
-      user_id: 1,
-      customer_name: 'Carlos Eduardo',
-      customer_phone: '11987654321',
-      service_name: 'Manutenção de Equipamentos',
-      appointment_time: new Date(Date.now() + 42 * 3600 * 1000).toISOString(),
-      status: 'scheduled',
-      google_event_id: 'evt_demo_102',
-      created_at: new Date().toISOString()
-    }
-  ] as Appointment[]
+  appointments: [] as Appointment[]
 };
 
 export async function authenticateUser(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
@@ -558,12 +504,13 @@ export async function getPlatformStats() {
     const usersCount = await sql`SELECT COUNT(*) FROM users;`;
     const instancesCount = await sql`SELECT COUNT(*) FROM whatsapp_instances WHERE status = 'connected';`;
     const filesCount = await sql`SELECT COUNT(*) FROM knowledge_files;`;
+    const messagesCount = await sql`SELECT COUNT(*) FROM chat_messages;`;
 
     return {
       totalUsers: Number(usersCount.rows[0].count || 0),
       activeInstances: Number(instancesCount.rows[0].count || 0),
       totalDocuments: Number(filesCount.rows[0].count || 0),
-      messagesProcessedToday: 4892,
+      messagesProcessedToday: Number(messagesCount.rows[0].count || 0),
       evolutionApiStatus: "ONLINE" as const,
       byoaiInferenceCostSaaS: "R$ 0,00"
     };
@@ -571,8 +518,8 @@ export async function getPlatformStats() {
     return {
       totalUsers: inMemoryStore.users.length,
       activeInstances: inMemoryStore.instances.filter(i => i.status === 'connected').length,
-      totalDocuments: inMemoryStore.knowledgeFiles.length + 6,
-      messagesProcessedToday: 4892,
+      totalDocuments: inMemoryStore.knowledgeFiles.length,
+      messagesProcessedToday: inMemoryStore.chatMessages.length,
       evolutionApiStatus: "ONLINE" as const,
       byoaiInferenceCostSaaS: "R$ 0,00"
     };

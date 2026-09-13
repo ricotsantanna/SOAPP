@@ -54,7 +54,7 @@ export async function generateAIReply({
       await createCalendarEvent({
         userId: uid,
         customerName: remoteJid ? remoteJid.split('@')[0] : 'Cliente WhatsApp',
-        customerPhone: remoteJid ? remoteJid.split('@')[0] : '51999998888',
+        customerPhone: remoteJid ? remoteJid.split('@')[0] : '',
         serviceName: 'Atendimento / Consulta IA',
         appointmentTime: apptDate.toISOString(),
       });
@@ -369,7 +369,7 @@ export async function generateAIReply({
 
   return {
     reply: demoReply,
-    provider: 'Social One Demo Engine',
+    provider: 'Social One AI Engine',
     ragInjected: !!ragContext,
   };
 }
