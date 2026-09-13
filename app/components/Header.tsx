@@ -29,17 +29,22 @@ export default function Header({ onOpenAuth }: HeaderProps) {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Official Image Logo & Title */}
         <Link href="/" className="flex items-center space-x-3 group">
-          <div className="overflow-hidden rounded-xl bg-white p-1 border border-white/20 shadow-lg shadow-purple-950/40 group-hover:scale-105 transition-transform duration-300">
+          <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-slate-900/90 border border-brand-violet/40 p-1 flex items-center justify-center shadow-lg shadow-brand-violet/20 group-hover:scale-105 transition-transform duration-300">
             <img 
-              src="/logo-palette.png" 
-              alt="Social One - IA e Redes Sociais em um só lugar" 
-              className="h-10 w-auto object-contain rounded-lg"
+              src="/logo.png" 
+              alt="Social One Logo" 
+              className="w-full h-full object-contain"
             />
           </div>
-          <span className="hidden sm:inline-flex text-[10px] uppercase font-extrabold tracking-widest text-brand-amber ml-1 px-2.5 py-0.5 rounded-full bg-brand-amber/10 border border-brand-amber/30 items-center gap-1 shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-amber animate-ping" />
-            SaaS Enterprise
-          </span>
+          <div className="flex items-center">
+            <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-brand-lavender">
+              Social One
+            </span>
+            <span className="hidden sm:inline-flex text-[10px] uppercase font-extrabold tracking-widest text-brand-amber ml-2.5 px-2.5 py-0.5 rounded-full bg-brand-amber/10 border border-brand-amber/30 items-center gap-1 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-amber animate-ping" />
+              SaaS Enterprise
+            </span>
+          </div>
         </Link>
 
         {/* Desktop Navigation */}
