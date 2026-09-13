@@ -56,16 +56,15 @@ export default function AdminLayout({
         <div>
           {/* Admin Logo */}
           <div className="flex items-center space-x-3 px-2 py-3 mb-6 border-b border-slate-800/80 pb-4">
-            <div className="bg-white/95 px-2 py-1 rounded-xl flex items-center justify-center shadow-lg border border-white/20">
+            <div className="overflow-hidden rounded-xl bg-white p-1 border border-white/20 shadow-lg">
               <img 
-                src="/logo-icon.png" 
+                src="/logo-palette.png" 
                 alt="Social One Admin" 
-                className="w-8 h-8 object-contain" 
+                className="h-10 w-auto object-contain rounded-lg" 
               />
             </div>
             <div>
-              <span className="font-extrabold text-xl tracking-tight text-white">Social One</span>
-              <div className="text-[10px] text-[#FACC15] font-mono font-bold uppercase tracking-wider">
+              <div className="text-[10px] text-[#FACC15] font-mono font-bold uppercase tracking-wider mt-0.5">
                 ADMIN CONSOLE
               </div>
             </div>

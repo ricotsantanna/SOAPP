@@ -60,16 +60,13 @@ export default function DashboardLayout({
       <header className="h-14 bg-[#070B1B] border-b border-slate-800/80 px-6 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center space-x-3">
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="bg-white/95 px-2 py-0.5 rounded-lg flex items-center justify-center shadow-md border border-white/20 group-hover:scale-105 transition-transform">
+            <div className="overflow-hidden rounded-xl bg-white p-1 border border-white/20 shadow-md group-hover:scale-105 transition-transform">
               <img 
-                src="/logo-icon.png" 
+                src="/logo-palette.png" 
                 alt="Social One" 
-                className="h-7 w-7 object-contain" 
+                className="h-8 w-auto object-contain rounded-lg" 
               />
             </div>
-            <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-purple-300">
-              Social One
-            </span>
           </Link>
           <span className="text-[10px] uppercase font-bold tracking-widest text-[#FACC15] px-2.5 py-0.5 rounded-full bg-[#FACC15]/10 border border-[#FACC15]/30 hidden sm:inline-block">
             Painel Corporativo

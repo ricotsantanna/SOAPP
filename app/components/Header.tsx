@@ -29,22 +29,17 @@ export default function Header({ onOpenAuth }: HeaderProps) {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Official Image Logo & Title */}
         <Link href="/" className="flex items-center space-x-3 group">
-          <div className="bg-white/95 px-2 py-1 rounded-xl flex items-center justify-center shadow-lg shadow-purple-950/40 border border-white/20 group-hover:scale-105 transition-transform duration-300">
+          <div className="overflow-hidden rounded-xl bg-white p-1 border border-white/20 shadow-lg shadow-purple-950/40 group-hover:scale-105 transition-transform duration-300">
             <img 
-              src="/logo-icon.png" 
-              alt="Social One Logo" 
-              className="h-8 w-8 object-contain"
+              src="/logo-palette.png" 
+              alt="Social One - IA e Redes Sociais em um só lugar" 
+              className="h-10 w-auto object-contain rounded-lg"
             />
           </div>
-          <div className="flex items-center">
-            <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-brand-lavender">
-              Social One
-            </span>
-            <span className="hidden sm:inline-flex text-[10px] uppercase font-extrabold tracking-widest text-brand-amber ml-2.5 px-2.5 py-0.5 rounded-full bg-brand-amber/10 border border-brand-amber/30 items-center gap-1 shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-amber animate-ping" />
-              SaaS Enterprise
-            </span>
-          </div>
+          <span className="hidden sm:inline-flex text-[10px] uppercase font-extrabold tracking-widest text-brand-amber ml-1 px-2.5 py-0.5 rounded-full bg-brand-amber/10 border border-brand-amber/30 items-center gap-1 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-amber animate-ping" />
+            SaaS Enterprise
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
