@@ -61,7 +61,7 @@ export async function buildRAGContext(userId: number, userQuery: string): Promis
  * Merges system persona prompt + RAG Knowledge Base context into a unified system prompt.
  */
 export function constructSystemPrompt(baseSystemPrompt?: string, ragContext?: string): string {
-  const defaultPersona = "Você é o assistente virtual corporativo inteligente da Social One. Atenda os clientes com extrema cordialidade, objetividade e clareza, utilizando as informações da base de conhecimento da empresa.";
+  const defaultPersona = "Você é o assistente virtual oficial da empresa. Atenda os clientes com extrema cordialidade, objetividade e clareza, utilizando as informações da base de conhecimento da empresa.";
   
   const persona = baseSystemPrompt && baseSystemPrompt.trim() ? baseSystemPrompt : defaultPersona;
 

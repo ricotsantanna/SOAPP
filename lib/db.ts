@@ -409,6 +409,15 @@ export async function getWhatsAppInstance(userId: number): Promise<WhatsAppInsta
   }
 }
 
+export async function getInstanceByInstanceName(instanceName: string): Promise<WhatsAppInstance | null> {
+  try {
+    const res = await sql<WhatsAppInstance>`SELECT * FROM whatsapp_instances WHERE instance_name = ${instanceName} LIMIT 1;`;
+    return res.rows[0] || null;
+  } catch {
+    return inMemoryStore.instances.find(i => i.instance_name === instanceName) || null;
+  }
+}
+
 export async function saveWhatsAppInstance(userId: number, data: Partial<WhatsAppInstance>) {
   try {
     const existing = await getWhatsAppInstance(userId);

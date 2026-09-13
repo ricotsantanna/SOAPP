@@ -52,7 +52,7 @@ export default function DashboardSettings() {
     pending_invoice_charges: 0,
     alert_80_sent: false,
     alert_100_sent: false,
-    system_prompt: 'Você é o assistente virtual corporativo inteligente da Social One. Atenda os clientes com extrema cordialidade, clareza e agilidade.'
+    system_prompt: 'Você é o assistente virtual oficial da empresa. Atenda os clientes via WhatsApp com máxima cordialidade e responda com base nos documentos da base de conhecimento.'
   });
 
   const [openaiKey, setOpenaiKey] = useState('');

@@ -48,6 +48,7 @@ const InstagramBrandIcon = ({ className = "w-5 h-5" }: { className?: string }) =
 export default function DashboardMasterWorkspace() {
   const [active, setActive] = useState<'whatsapp' | 'agenda' | 'instagram' | 'knowledge' | 'settings'>('whatsapp');
   const [businessModel, setBusinessModel] = useState<'service' | 'retail' | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [userPlan, setUserPlan] = useState<'start' | 'agenda' | 'social' | 'max'>('max');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -131,8 +132,8 @@ export default function DashboardMasterWorkspace() {
   const [settingUpWebhook, setSettingUpWebhook] = useState(false);
 
   // --- GOOGLE CALENDAR AUTH STATE ---
-  const [googleCalendarConnected, setGoogleCalendarConnected] = useState(true);
-  const [googleCalendarEmail, setGoogleCalendarEmail] = useState('contato.empresa@gmail.com');
+  const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
+  const [googleCalendarEmail, setGoogleCalendarEmail] = useState('');
   const [googleCalendarId, setGoogleCalendarId] = useState('primary');
   const [googleAuthTab, setGoogleAuthTab] = useState<'manual' | 'oauth'>('manual');
   const [savingCalendar, setSavingCalendar] = useState(false);
@@ -148,7 +149,7 @@ export default function DashboardMasterWorkspace() {
       const res = await fetch('/api/calendar/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 1, calendarEmail: googleCalendarEmail.trim(), calendarId: googleCalendarId.trim() }),
+        body: JSON.stringify({ userId: currentUserId, calendarEmail: googleCalendarEmail.trim(), calendarId: googleCalendarId.trim() }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -177,8 +178,8 @@ export default function DashboardMasterWorkspace() {
   const [showInstagramAuthModal, setShowInstagramAuthModal] = useState(false);
   const [instaPageId, setInstaPageId] = useState('');
   const [instaAccessToken, setInstaAccessToken] = useState('');
-  const [instaConnected, setInstaConnected] = useState(true);
-  const [instaHandle, setInstaHandle] = useState('@empresa.oficial');
+  const [instaConnected, setInstaConnected] = useState(false);
+  const [instaHandle, setInstaHandle] = useState('');
 
   // --- INTERACTIVE CHECKLIST STATE ---
   const [showChecklistModal, setShowChecklistModal] = useState(false);
@@ -232,8 +233,28 @@ export default function DashboardMasterWorkspace() {
   useEffect(() => {
     async function loadInitialData() {
       try {
+        let activeUid = currentUserId;
+        if (!activeUid) {
+          try {
+            const meRes = await fetch('/api/auth/me');
+            if (meRes.ok) {
+              const meData = await meRes.json();
+              if (meData.user?.id) {
+                activeUid = meData.user.id;
+                setCurrentUserId(meData.user.id);
+                if (meData.user.plan) setUserPlan(meData.user.plan);
+              }
+            }
+          } catch (_) {}
+        }
+
+        if (!activeUid) {
+          setShowOnboarding(false);
+          return;
+        }
+
         // Load User Profile & Business Model
-        const profRes = await fetch('/api/user/profile?userId=1');
+        const profRes = await fetch(`/api/user/profile?userId=${activeUid}`);
         if (profRes.ok) {
           const profData = await profRes.json();
           if (profData.profile?.business_model) {
@@ -296,7 +317,7 @@ export default function DashboardMasterWorkspace() {
         }
 
         // Then try server (will override if DB has keys)
-        const settingsRes = await fetch('/api/settings?userId=1');
+        const settingsRes = await fetch(`/api/settings?userId=${activeUid}`);
         if (settingsRes.ok) {
           const sObj = await settingsRes.json();
           const sData = sObj.data || sObj;
@@ -331,7 +352,7 @@ export default function DashboardMasterWorkspace() {
         }
 
         // Load Knowledge Base
-        const kbRes = await fetch('/api/knowledge?userId=1');
+        const kbRes = await fetch(`/api/knowledge?userId=${activeUid}`);
         if (kbRes.ok) {
           const kbData = await kbRes.json();
           if (kbData.files && Array.isArray(kbData.files)) {
@@ -345,7 +366,7 @@ export default function DashboardMasterWorkspace() {
         }
 
         // Load Carousels
-        const cRes = await fetch('/api/carousels?userId=1');
+        const cRes = await fetch(`/api/carousels?userId=${activeUid}`);
         if (cRes.ok) {
           const cData = await cRes.json();
           if (cData.carousels && Array.isArray(cData.carousels)) {
@@ -359,14 +380,14 @@ export default function DashboardMasterWorkspace() {
         }
 
         // Load WhatsApp connection status
-        const waRes = await fetch('/api/whatsapp?action=status&userId=1');
+        const waRes = await fetch(`/api/whatsapp?action=status&userId=${activeUid}`);
         if (waRes.ok) {
           const waData = await waRes.json();
           if (waData.status) setWaStatus(waData.status);
         }
 
         // Load Bot Pause / Human Handoff status
-        const pauseRes = await fetch('/api/whatsapp/pause-bot?userId=1');
+        const pauseRes = await fetch(`/api/whatsapp/pause-bot?userId=${activeUid}`);
         if (pauseRes.ok) {
           const pData = await pauseRes.json();
           setBotPaused(pData.isPaused);
@@ -374,7 +395,7 @@ export default function DashboardMasterWorkspace() {
         }
 
         // Load Appointments
-        const apptRes = await fetch('/api/appointments?userId=1');
+        const apptRes = await fetch(`/api/appointments?userId=${activeUid}`);
         if (apptRes.ok) {
           const aData = await apptRes.json();
           if (aData.appointments && Array.isArray(aData.appointments)) {
@@ -383,7 +404,7 @@ export default function DashboardMasterWorkspace() {
         }
 
         // Load live chat messages
-        const chatRes = await fetch('/api/ai/chat?userId=1');
+        const chatRes = await fetch(`/api/ai/chat?userId=${activeUid}`);
         if (chatRes.ok) {
           const cData = await chatRes.json();
           if (cData.messages && Array.isArray(cData.messages)) {
@@ -402,8 +423,9 @@ export default function DashboardMasterWorkspace() {
 
     // Poll for live WhatsApp messages every 3 seconds
     const interval = setInterval(async () => {
+      if (!currentUserId) return;
       try {
-        const res = await fetch('/api/ai/chat?userId=1');
+        const res = await fetch(`/api/ai/chat?userId=${currentUserId}`);
         if (res.ok) {
           const data = await res.json();
           if (data.messages && Array.isArray(data.messages)) {
@@ -417,7 +439,7 @@ export default function DashboardMasterWorkspace() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [currentUserId]);
 
   // Handlers
   const handleSendWaMessage = async (e: React.FormEvent) => {
@@ -445,7 +467,7 @@ export default function DashboardMasterWorkspace() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userText,
-          userId: 1,
+          userId: currentUserId,
           providerPreference: selectedProvider,
           apiKey: activeApiKey,
           systemPrompt: systemPrompt,
@@ -475,7 +497,7 @@ export default function DashboardMasterWorkspace() {
     setQrLoading(true);
     setQrError(null);
     try {
-      const res = await fetch('/api/whatsapp?action=qrcode&userId=1', { cache: 'no-store' });
+      const res = await fetch(`/api/whatsapp?action=qrcode&userId=${currentUserId || 1}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.qrcode) {
         setQrCodeData(data.qrcode);
@@ -505,7 +527,7 @@ export default function DashboardMasterWorkspace() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: 1,
+          userId: currentUserId,
           customerName: apptCustomerName,
           customerPhone: apptCustomerPhone,
           serviceName: apptServiceName,
@@ -549,7 +571,7 @@ export default function DashboardMasterWorkspace() {
       const res = await fetch('/api/whatsapp/pause-bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 1, instanceName: 'socialone_admin', durationHours }),
+        body: JSON.stringify({ userId: currentUserId, instanceName: 'socialone_admin', durationHours }),
       });
       const data = await res.json();
       if (data.success) {
@@ -567,7 +589,7 @@ export default function DashboardMasterWorkspace() {
     if (!confirm('Deseja desconectar esta instância do WhatsApp? Você precisará ler um novo QR Code para reconectar.')) return;
     setDisconnectingWa(true);
     try {
-      const res = await fetch('/api/whatsapp?action=logout&userId=1');
+      const res = await fetch(`/api/whatsapp?action=logout&userId=${currentUserId || 1}`);
       const data = await res.json();
       if (data.success) {
         setWaStatus('disconnected');
@@ -594,7 +616,7 @@ export default function DashboardMasterWorkspace() {
       const res = await fetch('/api/generate-post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 1, topic: carouselTopic, slidesCount: 5 }),
+        body: JSON.stringify({ userId: currentUserId, topic: carouselTopic, slidesCount: 5 }),
       });
       const data = await res.json();
       if (data.carousel) {
@@ -619,7 +641,7 @@ export default function DashboardMasterWorkspace() {
 
   const handleDeleteCarousel = async (id: number) => {
     try {
-      await fetch(`/api/carousels?id=${id}&userId=1`, { method: 'DELETE' });
+      await fetch(`/api/carousels?id=${id}&userId=${currentUserId || 1}`, { method: 'DELETE' });
       setCarousels(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       console.error('Error deleting carousel:', err);
@@ -634,7 +656,7 @@ export default function DashboardMasterWorkspace() {
     try {
       const formData = new FormData();
       formData.append('file', files[0]);
-      formData.append('userId', '1');
+      formData.append('userId', String(currentUserId || ''));
 
       const res = await fetch('/api/knowledge', {
         method: 'POST',
@@ -653,7 +675,7 @@ export default function DashboardMasterWorkspace() {
 
   const handleDeleteKnowledgeFile = async (id: number) => {
     try {
-      await fetch(`/api/knowledge?id=${id}&userId=1`, { method: 'DELETE' });
+      await fetch(`/api/knowledge?id=${id}&userId=${currentUserId || 1}`, { method: 'DELETE' });
       setKnowledgeFiles(prev => prev.filter(f => f.id !== id));
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -675,7 +697,7 @@ export default function DashboardMasterWorkspace() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: 1,
+          userId: currentUserId,
           openaiKey,
           geminiKey,
           claudeKey,
@@ -732,7 +754,7 @@ export default function DashboardMasterWorkspace() {
     setSettingUpWebhook(true);
     setWebhookSetupMsg(null);
     try {
-      const res = await fetch('/api/whatsapp?action=setup-webhook&userId=1', { cache: 'no-store' });
+      const res = await fetch(`/api/whatsapp?action=setup-webhook&userId=${currentUserId || 1}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setWebhookSetupMsg(`✅ Webhook configurado! A IA agora responderá automaticamente no WhatsApp Business.`);
@@ -753,7 +775,7 @@ export default function DashboardMasterWorkspace() {
       await fetch('/api/user/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 1, plan }),
+        body: JSON.stringify({ userId: currentUserId, plan }),
       });
     } catch (err) {
       console.error('Error updating user plan:', err);
@@ -767,7 +789,7 @@ export default function DashboardMasterWorkspace() {
       await fetch('/api/user/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 1, businessModel: model }),
+        body: JSON.stringify({ userId: currentUserId, businessModel: model }),
       });
     } catch (err) {
       console.error('Error updating business model:', err);
@@ -1297,7 +1319,7 @@ export default function DashboardMasterWorkspace() {
                 </div>
                 <div className="p-4 rounded-xl bg-[#111936] border border-slate-800">
                   <span className="text-xs text-[#E9D5FF]/60">Publicados no Mês</span>
-                  <p className="text-lg font-bold text-[#E9D5FF] mt-1">14 Posts</p>
+                  <p className="text-lg font-bold text-[#E9D5FF] mt-1">{carousels.filter(c => c.date === "Publicado").length} Posts</p>
                 </div>
               </div>
 

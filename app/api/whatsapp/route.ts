@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getWhatsAppInstance, saveWhatsAppInstance, saveChatMessage, isBotPaused } from '@/lib/db';
+import { getWhatsAppInstance, getInstanceByInstanceName, saveWhatsAppInstance, saveChatMessage, isBotPaused } from '@/lib/db';
 import { fetchQrCode, sendWhatsAppMessage, getInstanceStatus, logoutInstance } from '@/lib/evolution';
 import { generateAIReply } from '@/lib/ai';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -163,11 +163,14 @@ export async function POST(req: Request) {
         if (text && text.trim()) {
           console.log(`[WhatsApp Incoming Message] From: ${remoteJid} -> Text: "${text}"`);
 
+          const instObj = await getInstanceByInstanceName(instanceName);
+          const targetUserId = instObj?.user_id || 1;
+
           // 1. Save customer message to DB
-          await saveChatMessage(1, 'user', text, remoteJid);
+          await saveChatMessage(targetUserId, 'user', text, remoteJid);
 
           // 2. Check if bot is paused for human handoff
-          const pauseStatus = await isBotPaused(1, instanceName);
+          const pauseStatus = await isBotPaused(targetUserId, instanceName);
           if (pauseStatus.isPaused) {
             console.log(`[WhatsApp AI Paused] Bot is paused for instance ${instanceName} until ${pauseStatus.pausedUntil}. Skipping automatic AI response.`);
             return NextResponse.json({ status: 'bot_paused_for_human' });
@@ -176,13 +179,13 @@ export async function POST(req: Request) {
           // 3. Call AI generation engine with 15-message memory
           const aiResult = await generateAIReply({ 
             message: text, 
-            userId: 1,
+            userId: targetUserId,
             remoteJid,
           });
           console.log(`[WhatsApp AI Response] Generated via ${aiResult.provider}: "${aiResult.reply.substring(0, 50)}..."`);
 
           // 4. Save AI reply to DB
-          await saveChatMessage(1, 'assistant', aiResult.reply, remoteJid);
+          await saveChatMessage(targetUserId, 'assistant', aiResult.reply, remoteJid);
 
           // 5. Send back answer via WhatsApp Evolution API
           await sendWhatsAppMessage(instanceName, remoteJid, aiResult.reply);
