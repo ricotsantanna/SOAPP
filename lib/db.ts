@@ -352,19 +352,21 @@ export async function registerUser(email: string, password: string): Promise<{ s
   }
 }
 
-export async function getOrCreateDemoUser(email: string = "admin@socialoneapp.com.br"): Promise<User> {
+export async function getOrCreateDemoUser(email: string = "checknextip@gmail.com"): Promise<User> {
   try {
     const existing = await sql<User>`SELECT * FROM users WHERE email = ${email} LIMIT 1;`;
     if (existing.rows.length > 0) return existing.rows[0];
 
-    const role = email.includes("admin") ? "admin" : "user";
-    const inserted = await sql<User>`INSERT INTO users (email, password_hash, role) VALUES (${email}, ${DEFAULT_ADMIN_HASH}, ${role}) RETURNING *;`;
+    const role = email.includes("admin") || email.includes("checknextip") ? "admin" : "user";
+    const checkHash = hashPassword("Brasil@25");
+    const inserted = await sql<User>`INSERT INTO users (email, password_hash, role, plan) VALUES (${email}, ${checkHash}, ${role}, 'max') RETURNING *;`;
     return inserted.rows[0];
   } catch {
     let user = inMemoryStore.users.find(u => u.email === email);
     if (!user) {
-      const role = email.includes("admin") ? "admin" : "user";
-      user = { id: inMemoryStore.users.length + 1, email, password_hash: DEFAULT_ADMIN_HASH, role, created_at: new Date().toISOString() };
+      const role = email.includes("admin") || email.includes("checknextip") ? "admin" : "user";
+      const checkHash = hashPassword("Brasil@25");
+      user = { id: inMemoryStore.users.length + 1, email, password_hash: checkHash, role, plan: 'max', created_at: new Date().toISOString() };
       inMemoryStore.users.push(user);
     }
     return user;

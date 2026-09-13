@@ -54,8 +54,12 @@ export default function LandingPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setAuthError(data.error || 'Falha na autenticação');
+        setAuthError(data.error || 'Credenciais inválidas. Verifique seu e-mail e senha.');
         return;
+      }
+
+      if (data.user) {
+        localStorage.setItem('socialone_user', JSON.stringify(data.user));
       }
 
       if (data.user?.role === 'admin') {
@@ -69,13 +73,6 @@ export default function LandingPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickDemoFill = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setAuthMode('login');
-    setShowAuthModal(true);
   };
 
   return (
@@ -115,11 +112,11 @@ export default function LandingPage() {
             <ArrowRight className="w-5 h-5" />
           </button>
           <button
-            onClick={() => handleQuickDemoFill('admin@socialoneapp.com.br', 'admin123456')}
+            onClick={() => { setAuthMode('login'); setAuthError(''); setShowAuthModal(true); }}
             className="w-full sm:w-auto glass-panel text-brand-lavender font-semibold text-base px-8 py-4 rounded-xl hover:border-brand-violet/60 transition-all flex items-center justify-center space-x-2 border border-brand-violet/40"
           >
-            <ShieldCheck className="w-5 h-5 text-brand-amber" />
-            <span>Acesso Super Admin</span>
+            <Lock className="w-5 h-5 text-brand-amber" />
+            <span>Entrar na Minha Conta</span>
           </button>
         </div>
 

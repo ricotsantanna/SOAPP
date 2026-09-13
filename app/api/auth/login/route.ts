@@ -25,7 +25,8 @@ export async function POST(req: Request) {
       user: {
         id: user.id,
         email: user.email,
-        role: user.role || 'user'
+        role: user.role || 'user',
+        plan: user.plan || 'start'
       },
       token
     });
