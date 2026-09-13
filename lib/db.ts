@@ -73,6 +73,25 @@ export interface Appointment {
   created_at?: string;
 }
 
+export interface AISettings {
+  user_id: number;
+  billing_mode: 'byoai' | 'managed';
+  api_provider: 'openai' | 'gemini' | 'claude' | 'nvidia' | 'custom';
+  api_key?: string;
+  system_prompt?: string;
+  bot_paused_until?: string | null;
+  monthly_message_limit: number;
+  messages_used_this_month: number;
+  courtesy_credits: number;
+  courtesy_granted: boolean;
+  is_quota_blocked: boolean;
+  rollover_credits: number;
+  pending_invoice_charges: number;
+  alert_80_sent: boolean;
+  alert_100_sent: boolean;
+  updated_at?: string;
+}
+
 /**
  * Initializes database tables according to Social One SQL schema with password authentication.
  */
@@ -165,6 +184,27 @@ export async function initDb() {
         status VARCHAR(50) DEFAULT 'scheduled',
         google_event_id TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS ai_settings (
+        user_id INT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        billing_mode VARCHAR(20) DEFAULT 'byoai',
+        api_provider VARCHAR(50) DEFAULT 'openai',
+        api_key TEXT,
+        system_prompt TEXT,
+        bot_paused_until TIMESTAMP WITH TIME ZONE,
+        monthly_message_limit INT DEFAULT 0,
+        messages_used_this_month INT DEFAULT 0,
+        courtesy_credits INT DEFAULT 0,
+        courtesy_granted BOOLEAN DEFAULT FALSE,
+        is_quota_blocked BOOLEAN DEFAULT FALSE,
+        rollover_credits INT DEFAULT 0,
+        pending_invoice_charges DECIMAL(10,2) DEFAULT 0.00,
+        alert_80_sent BOOLEAN DEFAULT FALSE,
+        alert_100_sent BOOLEAN DEFAULT FALSE,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `;
 
@@ -775,5 +815,199 @@ export async function getUpcomingAppointments24h(): Promise<Appointment[]> {
     });
   }
 }
+
+export async function getUserById(userId: number): Promise<User | null> {
+  try {
+    const res = await sql<User>`SELECT * FROM users WHERE id = ${userId} LIMIT 1;`;
+    if (res.rows.length > 0) return res.rows[0];
+  } catch {
+    // fallback
+  }
+  return inMemoryStore.users.find(u => u.id === userId) || null;
+}
+
+// AI Engine & Billing Specification Operations
+export async function getAISettings(userId: number): Promise<AISettings> {
+  try {
+    const res = await sql<AISettings>`SELECT * FROM ai_settings WHERE user_id = ${userId};`;
+    if (res.rows.length > 0) {
+      return res.rows[0];
+    }
+  } catch {
+    // Sql error or fallback
+  }
+
+  // Determine user plan to set default monthly limit
+  const user = await getUserById(userId);
+  const plan = user?.plan || 'start';
+  let defaultLimit = 3000;
+  if (plan === 'agenda') defaultLimit = 6000;
+  if (plan === 'social' || plan === 'max') defaultLimit = 12000;
+
+  const defaultSettings: AISettings = {
+    user_id: userId,
+    billing_mode: 'byoai',
+    api_provider: 'openai',
+    monthly_message_limit: defaultLimit,
+    messages_used_this_month: 0,
+    courtesy_credits: 0,
+    courtesy_granted: false,
+    is_quota_blocked: false,
+    rollover_credits: 0,
+    pending_invoice_charges: 0,
+    alert_80_sent: false,
+    alert_100_sent: false,
+    updated_at: new Date().toISOString()
+  };
+
+  try {
+    await sql`
+      INSERT INTO ai_settings (user_id, billing_mode, api_provider, monthly_message_limit, messages_used_this_month, courtesy_credits, courtesy_granted, is_quota_blocked, rollover_credits, pending_invoice_charges, alert_80_sent, alert_100_sent)
+      VALUES (${userId}, 'byoai', 'openai', ${defaultLimit}, 0, 0, FALSE, FALSE, 0, 0.00, FALSE, FALSE)
+      ON CONFLICT (user_id) DO NOTHING;
+    `;
+  } catch {
+    // fallback ignore
+  }
+
+  return defaultSettings;
+}
+
+export async function updateAISettings(userId: number, updates: Partial<AISettings>): Promise<AISettings> {
+  const current = await getAISettings(userId);
+  const merged: AISettings = { ...current, ...updates, updated_at: new Date().toISOString() };
+
+  try {
+    await sql`
+      INSERT INTO ai_settings (
+        user_id, billing_mode, api_provider, api_key, system_prompt, bot_paused_until,
+        monthly_message_limit, messages_used_this_month, courtesy_credits, courtesy_granted,
+        is_quota_blocked, rollover_credits, pending_invoice_charges, alert_80_sent, alert_100_sent, updated_at
+      ) VALUES (
+        ${userId}, ${merged.billing_mode}, ${merged.api_provider}, ${merged.api_key || null}, ${merged.system_prompt || null}, ${merged.bot_paused_until || null},
+        ${merged.monthly_message_limit}, ${merged.messages_used_this_month}, ${merged.courtesy_credits}, ${merged.courtesy_granted},
+        ${merged.is_quota_blocked}, ${merged.rollover_credits}, ${merged.pending_invoice_charges}, ${merged.alert_80_sent}, ${merged.alert_100_sent}, ${merged.updated_at}
+      )
+      ON CONFLICT (user_id) DO UPDATE SET
+        billing_mode = EXCLUDED.billing_mode,
+        api_provider = EXCLUDED.api_provider,
+        api_key = EXCLUDED.api_key,
+        system_prompt = EXCLUDED.system_prompt,
+        bot_paused_until = EXCLUDED.bot_paused_until,
+        monthly_message_limit = EXCLUDED.monthly_message_limit,
+        messages_used_this_month = EXCLUDED.messages_used_this_month,
+        courtesy_credits = EXCLUDED.courtesy_credits,
+        courtesy_granted = EXCLUDED.courtesy_granted,
+        is_quota_blocked = EXCLUDED.is_quota_blocked,
+        rollover_credits = EXCLUDED.rollover_credits,
+        pending_invoice_charges = EXCLUDED.pending_invoice_charges,
+        alert_80_sent = EXCLUDED.alert_80_sent,
+        alert_100_sent = EXCLUDED.alert_100_sent,
+        updated_at = EXCLUDED.updated_at;
+    `;
+  } catch {
+    // In-memory fallback
+  }
+
+  return merged;
+}
+
+/**
+ * Message Abatement Engine following exact Specification Order:
+ * 1. Franquia Regular Mensal
+ * 2. Saldo de Cortesia (300 msgs)
+ * 3. Saldo Extra Acumulado (rollover_credits)
+ * 4. Bloqueio por Cota Excedida -> Transbordo Humano
+ */
+export async function deductMessageQuota(userId: number): Promise<{
+  allowed: boolean;
+  reason?: string;
+  settings: AISettings;
+  notificationSent?: string;
+}> {
+  const settings = await getAISettings(userId);
+
+  // Mode BYOAI -> Uncapped, 0 limits applied
+  if (settings.billing_mode === 'byoai') {
+    return { allowed: true, settings };
+  }
+
+  // Quota blocked or Human handoff active
+  if (settings.is_quota_blocked) {
+    return { allowed: false, reason: 'QUOTA_BLOCKED_HUMAN_HANDOFF', settings };
+  }
+
+  if (settings.bot_paused_until && new Date(settings.bot_paused_until) > new Date()) {
+    return { allowed: false, reason: 'BOT_PAUSED_HUMAN_HANDOFF', settings };
+  }
+
+  let notificationSent: string | undefined = undefined;
+
+  // Abatement Step 1: Franquia Regular Mensal
+  if (settings.messages_used_this_month < settings.monthly_message_limit) {
+    settings.messages_used_this_month += 1;
+
+    // Check 80% Alert
+    const usagePercent = settings.messages_used_this_month / settings.monthly_message_limit;
+    if (usagePercent >= 0.8 && !settings.alert_80_sent) {
+      settings.alert_80_sent = true;
+      notificationSent = 'ALERT_80_PERCENT';
+    }
+
+    // Check 100% Alert & Trigger 300 Courtesy Credits
+    if (settings.messages_used_this_month >= settings.monthly_message_limit && !settings.courtesy_granted) {
+      settings.courtesy_credits = 300;
+      settings.courtesy_granted = true;
+      settings.alert_100_sent = true;
+      notificationSent = 'ALERT_100_COURTESY_OFFER';
+    }
+
+    const updated = await updateAISettings(userId, settings);
+    return { allowed: true, settings: updated, notificationSent };
+  }
+
+  // Abatement Step 2: Saldo de Cortesia (300 msgs)
+  if (settings.courtesy_credits > 0) {
+    settings.courtesy_credits -= 1;
+    if (settings.courtesy_credits === 0 && settings.rollover_credits === 0) {
+      settings.is_quota_blocked = true;
+      notificationSent = 'COURTESY_EXHAUSTED_HUMAN_HANDOFF';
+    }
+    const updated = await updateAISettings(userId, settings);
+    return { allowed: true, settings: updated, notificationSent };
+  }
+
+  // Abatement Step 3: Saldo Extra Acumulado (rollover_credits)
+  if (settings.rollover_credits > 0) {
+    settings.rollover_credits -= 1;
+    if (settings.rollover_credits === 0) {
+      settings.is_quota_blocked = true;
+      notificationSent = 'ROLLOVER_EXHAUSTED_HUMAN_HANDOFF';
+    }
+    const updated = await updateAISettings(userId, settings);
+    return { allowed: true, settings: updated, notificationSent };
+  }
+
+  // Abatement Step 4: Bloqueio por Cota Excedida
+  settings.is_quota_blocked = true;
+  const updated = await updateAISettings(userId, settings);
+  return { allowed: false, reason: 'QUOTA_EXHAUSTED_HUMAN_HANDOFF', settings: updated };
+}
+
+/**
+ * Cenário A: Cliente aceita a oferta de pacote extra (+1.500 msgs por R$ 10,00)
+ */
+export async function acceptExtraPackage(userId: number): Promise<{ success: boolean; settings: AISettings }> {
+  const current = await getAISettings(userId);
+  
+  const updated = await updateAISettings(userId, {
+    rollover_credits: current.rollover_credits + 1500,
+    pending_invoice_charges: Number(current.pending_invoice_charges || 0) + 10.00,
+    is_quota_blocked: false
+  });
+
+  return { success: true, settings: updated };
+}
+
 
 

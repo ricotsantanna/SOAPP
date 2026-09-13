@@ -1,4 +1,4 @@
-import { getAIKeys, getWhatsAppInstance, getOrCreateDemoUser, getRecentChatMessages } from '@/lib/db';
+import { getAIKeys, getWhatsAppInstance, getOrCreateDemoUser, getRecentChatMessages, deductMessageQuota } from '@/lib/db';
 import { decryptApiKey } from '@/lib/encryption';
 import { buildRAGContext, constructSystemPrompt } from '@/lib/rag';
 import { getFreeBusySlots, createCalendarEvent } from '@/lib/googleCalendar';
@@ -20,6 +20,16 @@ export async function generateAIReply({
 }): Promise<{ reply: string; provider: string; ragInjected: boolean }> {
   const user = await getOrCreateDemoUser();
   const uid = user.id || userId;
+
+  // Quota Abatement & Human Handoff Check (Specification Item 5)
+  const quotaCheck = await deductMessageQuota(uid);
+  if (!quotaCheck.allowed) {
+    return {
+      reply: '⚠️ Suas 300 mensagens de presente esgotaram ou o bot está em atendimento manual. A IA foi desativada e a conversa foi encaminhada para atendimento humano.',
+      provider: 'Atendimento Humano (Contingência)',
+      ragInjected: false,
+    };
+  }
 
   // Check if message is related to scheduling / appointments
   const lowerMsg = message.toLowerCase();
