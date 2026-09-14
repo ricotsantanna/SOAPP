@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = parseInt(searchParams.get('userId') || '1', 10);
-    const instanceName = searchParams.get('instanceName') || 'socialone_admin';
+    const instanceName = searchParams.get('instanceName') || 'socialone_inst';
 
     const status = await isBotPaused(userId, instanceName);
     return NextResponse.json({ success: true, ...status });
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId = 1, instanceName = 'socialone_admin', durationHours } = body;
+    const { userId = 1, instanceName = 'socialone_inst', durationHours } = body;
 
     // durationHours: number (e.g. 1, 2, 24) or null to unpause/resume
     const result = await pauseBotInstance(userId, instanceName, durationHours ?? null);

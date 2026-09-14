@@ -12,18 +12,19 @@ export async function GET(req: Request) {
   const userId = user.id;
 
   const instance = await getWhatsAppInstance(userId);
-  const instanceName = instance?.instance_name || (userId === 1 ? 'socialone_admin' : `inst_user_${userId}`);
+  const instanceName = instance?.instance_name || (userId === 1 ? 'socialone_inst' : `inst_user_${userId}`);
 
   if (action === 'logout') {
     const logoutRes = await logoutInstance(instanceName);
-    if (instance) {
-      await saveWhatsAppInstance(userId, { status: 'disconnected', phone_number: '' });
-    }
+    await saveWhatsAppInstance(userId, { instance_name: instanceName, status: 'disconnected', phone_number: '' });
     return NextResponse.json(logoutRes);
   }
 
   if (action === 'qrcode') {
     const qrData = await fetchQrCode(instanceName);
+    if (qrData.status === 'connected') {
+      await saveWhatsAppInstance(userId, { instance_name: instanceName, status: 'connected' });
+    }
     return NextResponse.json(qrData, {
       headers: {
         'Cache-Control': 'no-store, max-age=0, must-revalidate',
@@ -33,9 +34,11 @@ export async function GET(req: Request) {
 
   if (action === 'status') {
     const statusData = await getInstanceStatus(instanceName);
-    if (instance) {
-      await saveWhatsAppInstance(userId, { status: statusData.status, phone_number: statusData.phone });
-    }
+    await saveWhatsAppInstance(userId, { 
+      instance_name: statusData.instanceName || instanceName, 
+      status: statusData.status, 
+      phone_number: statusData.phone 
+    });
     return NextResponse.json(statusData, {
       headers: {
         'Cache-Control': 'no-store, max-age=0, must-revalidate',

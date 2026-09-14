@@ -92,12 +92,18 @@ export async function testVpsConnection(customUrl?: string, customKey?: string):
 /**
  * Creates or fetches a WhatsApp instance on your Easypanel Evolution API.
  */
-export async function getOrCreateInstance(instanceName: string = 'socialone_default'): Promise<EvolutionInstanceInfo> {
+export async function getOrCreateInstance(instanceName: string = 'socialone_inst'): Promise<EvolutionInstanceInfo> {
   const baseUrl = getEvolutionBaseUrl();
   const headers = getHeaders();
 
   try {
-    // 1. Create instance request
+    // 1. First check if instance is already open / connected
+    const existingStatus = await getInstanceStatus(instanceName);
+    if (existingStatus.status === 'connected') {
+      return existingStatus;
+    }
+
+    // 2. Create instance request
     const createRes = await fetch(`${baseUrl}/instance/create`, {
       method: 'POST',
       headers,
@@ -114,15 +120,16 @@ export async function getOrCreateInstance(instanceName: string = 'socialone_defa
       const data = await createRes.json();
       const rawQr = data?.qrcode?.base64 || data?.qrcode?.code || data?.base64 || data?.code;
       const formattedQr = formatQrCodeBase64(rawQr);
+      const isOpened = data?.instance?.status === 'open' || data?.instance?.state === 'open' || data?.status === 'open';
 
       return {
         instanceName,
-        status: data?.instance?.status === 'open' ? 'connected' : 'connecting',
+        status: isOpened ? 'connected' : 'connecting',
         qrcode: formattedQr,
       };
     }
 
-    // 2. If instance already exists, check status
+    // 3. If instance already exists, check status
     return await getInstanceStatus(instanceName);
   } catch (error: any) {
     console.error('Error in getOrCreateInstance:', error);
@@ -136,26 +143,63 @@ export async function getOrCreateInstance(instanceName: string = 'socialone_defa
 
 /**
  * Checks connection status of an instance on the Easypanel Evolution API.
+ * Uses smart fallback to fetchInstances if instance name mismatch or 404 occurs.
  */
-export async function getInstanceStatus(instanceName: string = 'socialone_default'): Promise<EvolutionInstanceInfo> {
+export async function getInstanceStatus(instanceName: string = 'socialone_inst'): Promise<EvolutionInstanceInfo> {
   const baseUrl = getEvolutionBaseUrl();
   const headers = getHeaders();
 
   try {
+    // 1. Direct connectionState query
     const res = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
       headers,
       cache: 'no-store',
     });
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (res.ok) {
+      const data = await res.json();
+      const state = data?.instance?.state || data?.state || data?.connectionStatus || data?.instance?.connectionStatus || '';
+      const stateStr = String(state).toLowerCase();
+      const isConnected = stateStr === 'open' || stateStr === 'connected';
+      const isConnecting = stateStr === 'connecting' || stateStr === 'qrcode' || stateStr === 'pairing';
+      const phone = data?.instance?.ownerJid || data?.ownerJid || data?.instance?.owner || data?.owner || data?.number || '';
 
-    const data = await res.json();
-    const state = data?.instance?.state || data?.state;
+      return {
+        instanceName,
+        status: isConnected ? 'connected' : isConnecting ? 'connecting' : 'disconnected',
+        phone: phone ? String(phone).replace('@s.whatsapp.net', '') : undefined,
+      };
+    }
+
+    // 2. Fallback: If 404 or instance name mismatch, fetch all instances from Evolution API
+    const allRes = await fetch(`${baseUrl}/instance/fetchInstances`, { headers, cache: 'no-store' });
+    if (allRes.ok) {
+      const allData = await allRes.json();
+      if (Array.isArray(allData)) {
+        // Look for matching instance or any open instance
+        const match = allData.find((i: any) => (i.name || i.instanceName) === instanceName) ||
+                      allData.find((i: any) => i.connectionStatus === 'open' || i.state === 'open');
+
+        if (match) {
+          const matchName = match.name || match.instanceName || instanceName;
+          const matchStatus = String(match.connectionStatus || match.state || '').toLowerCase();
+          const isConn = matchStatus === 'open' || matchStatus === 'connected';
+          const isConnIng = matchStatus === 'connecting' || matchStatus === 'qrcode';
+          const matchPhone = match.ownerJid || match.number || match.owner || '';
+
+          return {
+            instanceName: matchName,
+            status: isConn ? 'connected' : isConnIng ? 'connecting' : 'disconnected',
+            phone: matchPhone ? String(matchPhone).replace('@s.whatsapp.net', '') : undefined,
+          };
+        }
+      }
+    }
 
     return {
       instanceName,
-      status: state === 'open' ? 'connected' : state === 'connecting' ? 'connecting' : 'disconnected',
-      phone: data?.instance?.owner || data?.owner,
+      status: 'disconnected',
+      error: `HTTP ${res.status}`,
     };
   } catch (error: any) {
     return {
@@ -169,13 +213,25 @@ export async function getInstanceStatus(instanceName: string = 'socialone_defaul
 /**
  * Fetches current real QR code for pairing from Easypanel Evolution API.
  */
-export async function fetchQrCode(instanceName: string = 'socialone_default'): Promise<{ qrcode?: string; status: string; error?: string }> {
+export async function fetchQrCode(instanceName: string = 'socialone_inst'): Promise<{ qrcode?: string; status: string; error?: string }> {
   const baseUrl = getEvolutionBaseUrl();
   const headers = getHeaders();
 
   try {
-    // 1. Ensure instance exists on Easypanel
+    // 1. Check status first — if already connected, don't generate new QR code
+    const statusInfo = await getInstanceStatus(instanceName);
+    if (statusInfo.status === 'connected') {
+      return {
+        status: 'connected',
+        qrcode: undefined,
+      };
+    }
+
+    // 2. Ensure instance exists on Easypanel
     const createResult = await getOrCreateInstance(instanceName);
+    if (createResult.status === 'connected') {
+      return { status: 'connected' };
+    }
     if (createResult.qrcode) {
       return {
         qrcode: createResult.qrcode,
@@ -183,7 +239,7 @@ export async function fetchQrCode(instanceName: string = 'socialone_default'): P
       };
     }
 
-    // 2. Fetch connect QR Code
+    // 3. Fetch connect QR Code
     const res = await fetch(`${baseUrl}/instance/connect/${instanceName}`, {
       headers,
       cache: 'no-store',
@@ -202,8 +258,7 @@ export async function fetchQrCode(instanceName: string = 'socialone_default'): P
       }
     }
 
-    // 3. Fallback check status
-    const statusInfo = await getInstanceStatus(instanceName);
+    // 4. Fallback check status
     return {
       status: statusInfo.status,
       qrcode: statusInfo.qrcode,
@@ -221,7 +276,7 @@ export async function fetchQrCode(instanceName: string = 'socialone_default'): P
 /**
  * Logs out and disconnects a WhatsApp instance on Evolution API.
  */
-export async function logoutInstance(instanceName: string = 'socialone_default'): Promise<{ success: boolean; error?: string }> {
+export async function logoutInstance(instanceName: string = 'socialone_inst'): Promise<{ success: boolean; error?: string }> {
   const baseUrl = getEvolutionBaseUrl();
   const headers = getHeaders();
 
@@ -246,7 +301,7 @@ export async function logoutInstance(instanceName: string = 'socialone_default')
 /**
  * Sends a text message via WhatsApp using the Easypanel Evolution API.
  */
-export async function sendWhatsAppMessage(instanceName: string = 'socialone_admin', remoteJid: string, text: string) {
+export async function sendWhatsAppMessage(instanceName: string = 'socialone_inst', remoteJid: string, text: string) {
   const baseUrl = getEvolutionBaseUrl();
   const headers = getHeaders();
   const cleanNumber = remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');

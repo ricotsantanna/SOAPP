@@ -421,10 +421,23 @@ export default function DashboardMasterWorkspace() {
 
     loadInitialData();
 
-    // Poll for live WhatsApp messages every 3 seconds
+    // Poll for live WhatsApp status and chat messages every 3 seconds
     const interval = setInterval(async () => {
       if (!currentUserId) return;
       try {
+        // Poll WhatsApp Connection Status
+        const waRes = await fetch(`/api/whatsapp?action=status&userId=${currentUserId}`);
+        if (waRes.ok) {
+          const waData = await waRes.json();
+          if (waData.status) {
+            setWaStatus(waData.status);
+            if (waData.status === 'connected') {
+              setQrCodeData(null);
+            }
+          }
+        }
+
+        // Poll live chat messages
         const res = await fetch(`/api/ai/chat?userId=${currentUserId}`);
         if (res.ok) {
           const data = await res.json();

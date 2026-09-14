@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     // 4. If WhatsApp instance is connected, optionally relay web message to WhatsApp
     const instance = await getWhatsAppInstance(userId);
     if (instance?.status === 'connected' && instance?.phone_number) {
-      sendWhatsAppMessage(instance.instance_name || 'socialone_admin', instance.phone_number, result.reply).catch(() => {});
+      sendWhatsAppMessage(instance.instance_name || 'socialone_inst', instance.phone_number, result.reply).catch(() => {});
     }
 
     // 5. Fetch updated message list
