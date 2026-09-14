@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { saveKnowledgeFile } from '@/lib/db';
+import { convertToMarkdown } from '@/lib/markdownConverter';
 
 export async function POST(request: Request) {
   try {
@@ -19,15 +20,9 @@ export async function POST(request: Request) {
       });
       if (res.ok) {
         const html = await res.text();
-        // Remove HTML scripts and tags
-        const cleanText = html
-          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-        
-        extractedText = cleanText.substring(0, 5000);
+        // Convert HTML to clean, token-efficient Markdown
+        const rawMarkdown = convertToMarkdown(html, pageTitle);
+        extractedText = rawMarkdown.substring(0, 8000);
         
         // Extract title tag if present
         const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
@@ -37,7 +32,7 @@ export async function POST(request: Request) {
       }
     } catch (fetchErr) {
       console.warn('URL fetch notice:', fetchErr);
-      extractedText = `Conteúdo indexado da URL ${url}`;
+      extractedText = convertToMarkdown(`Conteúdo indexado da URL ${url}`, pageTitle);
     }
 
     const newFile = {

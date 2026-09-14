@@ -1,18 +1,17 @@
 import { KnowledgeFile, getKnowledgeFiles } from './db';
+import { convertToMarkdown } from './markdownConverter';
 
 /**
- * Extracts raw text from a PDF Buffer or base64 data.
+ * Extracts text from a PDF Buffer and converts it to clean, token-optimized Markdown.
  */
 export async function extractTextFromPDF(fileBuffer: Buffer): Promise<string> {
   try {
-    // Basic text extractor fallback for serverless Node environment
     const rawText = fileBuffer.toString('utf-8');
-    // Filter printable characters if raw text extraction is used
-    const cleanText = rawText.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s+/g, ' ');
+    const cleanText = rawText.replace(/[^\x20-\x7E\n\r\t\u00C0-\u00FF]/g, ' ').replace(/\s+/g, ' ');
     if (cleanText.length > 50) {
-      return cleanText.substring(0, 15000);
+      return convertToMarkdown(cleanText);
     }
-    return `[Documento PDF Processado] Conteúdo do arquivo com ${fileBuffer.length} bytes extraído com sucesso para o banco de conhecimento Social One.`;
+    return convertToMarkdown(`[Documento PDF Processado] Conteúdo do arquivo com ${fileBuffer.length} bytes extraído com sucesso para o banco de conhecimento Social One.`);
   } catch (error) {
     console.error('Error parsing PDF file:', error);
     return 'Conteúdo do PDF processado para busca de contexto.';
