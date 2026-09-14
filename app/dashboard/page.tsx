@@ -49,9 +49,11 @@ export default function DashboardMasterWorkspace() {
   const [active, setActive] = useState<'whatsapp' | 'agenda' | 'instagram' | 'knowledge' | 'settings'>('whatsapp');
   const [businessModel, setBusinessModel] = useState<'service' | 'retail' | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string>('');
   const [userPlan, setUserPlan] = useState<'start' | 'agenda' | 'social' | 'max'>('max');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [aiFallbackMsg, setAiFallbackMsg] = useState<string | null>(null);
 
   // --- WHATSAPP STATE ---
   const [waStatus, setWaStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
@@ -92,7 +94,7 @@ export default function DashboardMasterWorkspace() {
   const [uploadingPdf, setUploadingPdf] = useState(false);
 
   // --- SETTINGS (BYOAI) STATE ---
-  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'gemini' | 'claude' | 'nvidia' | 'custom'>('openai');
+  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'gemini' | 'claude' | 'nvidia' | 'custom' | 'socialone'>('openai');
   const [openaiKey, setOpenaiKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [claudeKey, setClaudeKey] = useState('');
@@ -243,6 +245,7 @@ export default function DashboardMasterWorkspace() {
                 activeUid = meData.user.id;
                 setCurrentUserId(meData.user.id);
                 if (meData.user.plan) setUserPlan(meData.user.plan);
+                if (meData.user.name) setCurrentUserName(meData.user.name);
               }
             }
           } catch (_) {}
@@ -472,6 +475,7 @@ export default function DashboardMasterWorkspace() {
         claude: claudeKey,
         nvidia: nvidiaKey,
         custom: customKey,
+        socialone: '', // Uses server key — no user key needed
       };
       const activeApiKey = activeKeyMap[selectedProvider] || '';
 
@@ -487,6 +491,17 @@ export default function DashboardMasterWorkspace() {
         }),
       });
       const data = await res.json();
+
+      // Show fallback notification if AI switched provider automatically
+      if (data.fallbackInfo) {
+        const providerNames: Record<string, string> = {
+          openai: 'OpenAI GPT-4o', gemini: 'Google Gemini', claude: 'Anthropic Claude',
+          nvidia: 'NVIDIA NIM', custom: 'Provedor Customizado', socialone: 'IA Social One'
+        };
+        setAiFallbackMsg(`🔄 Créditos da ${providerNames[data.fallbackInfo.from] || data.fallbackInfo.from} esgotados. Alternando automaticamente para ${providerNames[data.fallbackInfo.to] || data.fallbackInfo.to}.`);
+        setTimeout(() => setAiFallbackMsg(null), 8000);
+      }
+
       if (data.messages && Array.isArray(data.messages)) {
         setChatMessages(data.messages.map((m: any) => ({
           sender: m.sender === 'user' ? 'user' : 'ai',
@@ -737,7 +752,8 @@ export default function DashboardMasterWorkspace() {
           gemini: 'Google Gemini (Gratuito)',
           claude: 'Anthropic Claude',
           nvidia: 'NVIDIA NIM (DeepSeek/Llama 3)',
-          custom: 'Provedor Customizado / Groq'
+          custom: 'Provedor Customizado / Groq',
+          socialone: 'IA Social One (GPT-4o Gerenciado)',
         };
         setActiveProviderText(textMap[selectedProvider] || 'OpenAI (GPT-4o)');
 
@@ -974,6 +990,13 @@ export default function DashboardMasterWorkspace() {
                   </div>
 
                   <div className="h-44 overflow-y-auto space-y-2 text-xs pr-1">
+                    {/* AI Fallback Notification */}
+                    {aiFallbackMsg && (
+                      <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[11px] flex items-start space-x-2 animate-fadeIn">
+                        <span className="text-base shrink-0">🔄</span>
+                        <span>{aiFallbackMsg}</span>
+                      </div>
+                    )}
                     {chatMessages.map((m, idx) => (
                       <div key={idx} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] p-2.5 rounded-xl ${
@@ -1009,9 +1032,18 @@ export default function DashboardMasterWorkspace() {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-[#070B1B] border-t border-slate-800/40 text-center shrink-0">
-          <span className="text-[10px] text-[#E9D5FF]/50 uppercase tracking-widest font-mono">socialoneapp.com.br</span>
+        {/* Footer — WhatsApp (verde) com nome dinâmico do cliente */}
+        <div className="shrink-0">
+          <div className="h-1 bg-gradient-to-r from-[#25D366] to-[#128C7E]" />
+          <div className="px-4 py-2 bg-[#070B1B] flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <WhatsAppBrandIcon className="w-3.5 h-3.5 text-[#25D366]" />
+              <span className="text-[10px] text-[#25D366]/80 font-bold tracking-wider uppercase">WhatsApp Business API</span>
+            </div>
+            <span className="text-[10px] text-[#25D366]/60 font-mono truncate max-w-[160px]">
+              {currentUserName || 'socialoneapp.com.br'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -1221,9 +1253,20 @@ export default function DashboardMasterWorkspace() {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-[#070B1B] border-t border-slate-800/40 text-center shrink-0">
-          <span className="text-[10px] text-[#E9D5FF]/50 uppercase tracking-widest font-mono">socialoneapp.com.br</span>
+        {/* Footer — Agenda (âmbar) com nome dinâmico */}
+        <div className="shrink-0">
+          <div className="h-1 bg-gradient-to-r from-[#FACC15] to-[#F59E0B]" />
+          <div className="px-4 py-2 bg-[#070B1B] flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Calendar className="w-3.5 h-3.5 text-[#FACC15]" />
+              <span className="text-[10px] text-[#FACC15]/80 font-bold tracking-wider uppercase">
+                {businessModel === 'service' ? 'Agenda Inteligente SSOT' : 'CRM & Vendas'}
+              </span>
+            </div>
+            <span className="text-[10px] text-[#FACC15]/60 font-mono truncate max-w-[160px]">
+              {currentUserName || 'socialoneapp.com.br'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -1377,9 +1420,18 @@ export default function DashboardMasterWorkspace() {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-[#070B1B] border-t border-slate-800/40 text-center shrink-0">
-          <span className="text-[10px] text-[#E9D5FF]/50 uppercase tracking-widest font-mono">socialoneapp.com.br</span>
+        {/* Footer — Instagram (gradiente Instagram) com nome dinâmico */}
+        <div className="shrink-0">
+          <div className="h-1" style={{ background: 'linear-gradient(90deg, #E1306C, #833AB4, #FCAF45)' }} />
+          <div className="px-4 py-2 bg-[#070B1B] flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <InstagramBrandIcon className="w-3.5 h-3.5 text-[#E1306C]" />
+              <span className="text-[10px] font-bold tracking-wider uppercase" style={{ background: 'linear-gradient(90deg, #E1306C, #FCAF45)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Instagram Business API</span>
+            </div>
+            <span className="text-[10px] text-pink-400/60 font-mono truncate max-w-[160px]">
+              {currentUserName || 'socialoneapp.com.br'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -1498,9 +1550,18 @@ export default function DashboardMasterWorkspace() {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-[#070B1B] border-t border-slate-800/40 text-center shrink-0">
-          <span className="text-[10px] text-[#E9D5FF]/50 uppercase tracking-widest font-mono">socialoneapp.com.br</span>
+        {/* Footer — Base de Conhecimento (roxo) com nome dinâmico */}
+        <div className="shrink-0">
+          <div className="h-1 bg-gradient-to-r from-[#7C3AED] to-[#A855F7]" />
+          <div className="px-4 py-2 bg-[#070B1B] flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Database className="w-3.5 h-3.5 text-[#A855F7]" />
+              <span className="text-[10px] text-[#A855F7]/80 font-bold tracking-wider uppercase">RAG Knowledge Base</span>
+            </div>
+            <span className="text-[10px] text-[#A855F7]/60 font-mono truncate max-w-[160px]">
+              {currentUserName || 'socialoneapp.com.br'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -1554,11 +1615,47 @@ export default function DashboardMasterWorkspace() {
                 </p>
               </div>
 
+
+              {/* ====== IA SOCIAL ONE (GERENCIADA - PAGA) ====== */}
+              <div className="p-4 rounded-2xl border-2 border-[#FACC15]/50 bg-gradient-to-br from-[#1a1030] to-[#111936] space-y-3 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#FACC15]/5 rounded-full blur-2xl pointer-events-none" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-1.5 rounded-lg bg-[#FACC15]/20">
+                      <Sparkles className="w-4 h-4 text-[#FACC15]" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-[#FACC15]">IA Social One</h4>
+                      <p className="text-[10px] text-slate-400">GPT-4o gerenciado • Cobrado no plano</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black px-2 py-1 rounded-lg bg-[#FACC15]/20 text-[#FACC15] border border-[#FACC15]/40">PREMIUM</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Use a IA oficial da Social One (GPT-4o) sem precisar cadastrar sua própria chave. O uso é cobrado proporcionalmente ao seu plano e aparece na fatura mensal.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProvider('socialone');
+                    setActiveProviderText('IA Social One (GPT-4o Gerenciado)');
+                  }}
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2 ${
+                    selectedProvider === 'socialone'
+                      ? 'bg-[#FACC15] text-slate-950 shadow-lg shadow-yellow-500/20'
+                      : 'bg-[#FACC15]/10 text-[#FACC15] border border-[#FACC15]/30 hover:bg-[#FACC15]/20'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{selectedProvider === 'socialone' ? '✓ IA Social One Ativa' : 'Usar IA Social One'}</span>
+                </button>
+              </div>
+
               {/* Status das Chaves Cadastradas */}
               <div className="p-4.5 rounded-2xl bg-[#111936] border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Status das Suas Chaves de IA Cadastradas</h4>
-                  <span className="text-[10px] text-[#FACC15] font-semibold">Clique para editar uma chave</span>
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Suas Chaves BYOAI (Alternância Automática)</h4>
+                  <span className="text-[10px] text-[#FACC15] font-semibold">Clique para editar</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                   {/* OpenAI Badge */}
@@ -1872,6 +1969,37 @@ export default function DashboardMasterWorkspace() {
                   </div>
                 )}
 
+                {/* Nome do Usuário / Cliente */}
+                <div className="p-4 rounded-2xl bg-[#090E22] border border-[#FACC15]/20 space-y-2">
+                  <label className="block text-xs font-bold text-[#FACC15] uppercase tracking-wider flex items-center space-x-2">
+                    <span>👤</span>
+                    <span>Meu Nome (aparece no rodapé do painel)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={currentUserName}
+                    onChange={e => setCurrentUserName(e.target.value)}
+                    placeholder="Ex: Maria Silva Consultoria"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#111936] border border-slate-800 text-xs text-white focus:outline-none focus:border-[#FACC15]"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!currentUserId || !currentUserName.trim()) return;
+                      await fetch('/api/user/profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: currentUserId, name: currentUserName.trim() })
+                      });
+                      setSavedSettingsMsg(`✅ Nome "${currentUserName}" salvo com sucesso!`);
+                      setTimeout(() => setSavedSettingsMsg(null), 3000);
+                    }}
+                    className="text-xs font-bold text-[#FACC15] bg-[#FACC15]/10 border border-[#FACC15]/30 px-4 py-2 rounded-xl hover:bg-[#FACC15]/20 transition-colors"
+                  >
+                    Salvar Nome
+                  </button>
+                </div>
+
                 {/* System Prompt / Persona */}
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">System Prompt / Persona do Negócio</label>
@@ -1954,9 +2082,18 @@ export default function DashboardMasterWorkspace() {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-[#070B1B] border-t border-slate-800/40 text-center shrink-0">
-          <span className="text-[10px] text-[#E9D5FF]/50 uppercase tracking-widest font-mono">socialoneapp.com.br</span>
+        {/* Footer — Configurações (azul) com nome dinâmico */}
+        <div className="shrink-0">
+          <div className="h-1 bg-gradient-to-r from-[#3B82F6] to-[#6366F1]" />
+          <div className="px-4 py-2 bg-[#070B1B] flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Bot className="w-3.5 h-3.5 text-[#3B82F6]" />
+              <span className="text-[10px] text-[#3B82F6]/80 font-bold tracking-wider uppercase">BYOAI • Failover IA Automático</span>
+            </div>
+            <span className="text-[10px] text-[#3B82F6]/60 font-mono truncate max-w-[160px]">
+              {currentUserName || 'socialoneapp.com.br'}
+            </span>
+          </div>
         </div>
       </div>
 

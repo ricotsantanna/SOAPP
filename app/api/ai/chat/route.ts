@@ -50,6 +50,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ 
       ...result,
+      fallbackInfo: result.fallbackInfo,
       messages: updatedMessages 
     });
   } catch (error) {

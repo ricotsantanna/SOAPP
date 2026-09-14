@@ -17,7 +17,7 @@ export async function generateAIReply({
   providerPreference?: string;
   apiKey?: string;
   systemPrompt?: string;
-}): Promise<{ reply: string; provider: string; ragInjected: boolean }> {
+}): Promise<{ reply: string; provider: string; ragInjected: boolean; fallbackInfo?: { from: string; to: string } }> {
   const user = await getOrCreateDemoUser();
   const uid = user.id || userId;
 
@@ -75,9 +75,21 @@ export async function generateAIReply({
 
   // If a direct API key was passed from the frontend (bypasses serverless RAM issue), use it
   let plainApiKey = directApiKey?.trim() || '';
+  let usedFallback = false;
+  let originalProvider = provider;
+
+  // ======= SOCIAL ONE MANAGED IA =======
+  // Uses server-side OPENAI_API_KEY — no user key required, billed to plan
+  if (provider === 'socialone') {
+    const serverKey = process.env.OPENAI_API_KEY;
+    if (serverKey) {
+      plainApiKey = serverKey;
+      provider = 'openai'; // use openai logic but with server key
+    }
+  }
 
   // Only look up DB keys if no direct key was provided
-  if (!plainApiKey) {
+  if (!plainApiKey && provider !== 'socialone') {
     const keyObj = userKeys.find(k => k.provider === provider && k.encrypted_api_key);
     plainApiKey = keyObj ? decryptApiKey(keyObj.encrypted_api_key) : '';
 
@@ -86,17 +98,23 @@ export async function generateAIReply({
       plainApiKey = '';
     }
 
-    // Smart Auto-Fallback: If requested provider key is empty, check if user has ANY valid key saved
+    // Smart Auto-Fallback Chain: iterate through all saved providers in order
     if (!plainApiKey && provider !== 'custom') {
-      const fallbackKey = userKeys.find(k => {
-        if (!k.encrypted_api_key) return false;
-        const dec = decryptApiKey(k.encrypted_api_key);
-        return dec && !dec.includes('xxxx') && !dec.includes('••••') && dec.trim().length > 5;
-      });
+      const providerOrder = ['openai', 'gemini', 'claude', 'nvidia', 'custom'];
+      for (const fallbackProvider of providerOrder) {
+        if (fallbackProvider === originalProvider) continue; // skip the one that already failed
+        const fbKey = userKeys.find(k => {
+          if (k.provider !== fallbackProvider || !k.encrypted_api_key) return false;
+          const dec = decryptApiKey(k.encrypted_api_key);
+          return dec && !dec.includes('xxxx') && !dec.includes('••••') && dec.trim().length > 5;
+        });
 
-      if (fallbackKey) {
-        provider = fallbackKey.provider;
-        plainApiKey = decryptApiKey(fallbackKey.encrypted_api_key);
+        if (fbKey) {
+          provider = fbKey.provider;
+          plainApiKey = decryptApiKey(fbKey.encrypted_api_key);
+          usedFallback = true;
+          break;
+        }
       }
     }
   }
@@ -153,7 +171,13 @@ export async function generateAIReply({
       }
 
       if (openaiReply) {
-        return { reply: openaiReply, provider: 'OpenAI (GPT-4o)', ragInjected: !!ragContext };
+        const isSocialOne = originalProvider === 'socialone';
+        return {
+          reply: openaiReply,
+          provider: isSocialOne ? 'IA Social One (GPT-4o Gerenciado)' : 'OpenAI (GPT-4o)',
+          ragInjected: !!ragContext,
+          fallbackInfo: usedFallback ? { from: originalProvider, to: 'openai' } : undefined,
+        };
       } else {
         return {
           reply: `⚠️ Erro na OpenAI: ${lastOpenaiErr}. Por favor, verifique se a sua chave de API possui saldo ativo em platform.openai.com.`,
@@ -208,7 +232,12 @@ export async function generateAIReply({
       }
 
       if (geminiReply) {
-        return { reply: geminiReply, provider: 'Google Gemini (BYOAI)', ragInjected: !!ragContext };
+        return {
+          reply: geminiReply,
+          provider: 'Google Gemini (BYOAI)',
+          ragInjected: !!ragContext,
+          fallbackInfo: usedFallback ? { from: originalProvider, to: 'gemini' } : undefined,
+        };
       } else {
         return {
           reply: `⚠️ Erro no Google Gemini: ${geminiErrorMsg}. Verifique a sua chave no Google AI Studio (aistudio.google.com).`,
@@ -263,7 +292,12 @@ export async function generateAIReply({
       }
 
       if (claudeReply) {
-        return { reply: claudeReply, provider: 'Anthropic Claude (BYOAI)', ragInjected: !!ragContext };
+        return {
+          reply: claudeReply,
+          provider: 'Anthropic Claude (BYOAI)',
+          ragInjected: !!ragContext,
+          fallbackInfo: usedFallback ? { from: originalProvider, to: 'claude' } : undefined,
+        };
       } else {
         return {
           reply: `⚠️ Erro na Anthropic (Claude): ${claudeErr}. Verifique sua chave no console da Anthropic (console.anthropic.com).`,
@@ -308,7 +342,12 @@ export async function generateAIReply({
       }
 
       if (nvidiaReply) {
-        return { reply: nvidiaReply, provider: 'NVIDIA NIM (Llama/DeepSeek)', ragInjected: !!ragContext };
+        return {
+          reply: nvidiaReply,
+          provider: 'NVIDIA NIM (Llama/DeepSeek)',
+          ragInjected: !!ragContext,
+          fallbackInfo: usedFallback ? { from: originalProvider, to: 'nvidia' } : undefined,
+        };
       } else {
         return {
           reply: `⚠️ Erro na NVIDIA NIM API: ${nvidiaErr}. Verifique sua chave de API obtida no portal build.nvidia.com.`,
@@ -340,7 +379,12 @@ export async function generateAIReply({
         if (response.ok) {
           const data = await response.json();
           const reply = data.choices?.[0]?.message?.content || 'Sem resposta do provedor customizado.';
-          return { reply, provider: `Custom Provider (${modelName})`, ragInjected: !!ragContext };
+          return {
+            reply,
+            provider: `Custom Provider (${modelName})`,
+            ragInjected: !!ragContext,
+            fallbackInfo: usedFallback ? { from: originalProvider, to: 'custom' } : undefined,
+          };
         } else {
           const errData = await response.json().catch(() => ({}));
           const errMsg = errData?.error?.message || `HTTP ${response.status}`;

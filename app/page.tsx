@@ -32,6 +32,7 @@ export default function LandingPage() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
   const [authError, setAuthError] = useState('');
@@ -45,10 +46,13 @@ export default function LandingPage() {
     const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
 
     try {
+      const body: Record<string, string> = { email, password };
+      if (authMode === 'register' && name.trim()) body.name = name.trim();
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -131,7 +135,7 @@ export default function LandingPage() {
             </div>
             <h3 className="text-lg font-bold text-white mb-2">RAG Base de Conhecimento</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Injete PDFs e conecte o Google Drive para respostas 100% fundamentadas nos dados e catálogo da sua empresa.
+              Injete PDFs e Google Drive. Os documentos são <strong className="text-brand-lavender">convertidos para Markdown</strong> automaticamente, reduzindo o consumo de tokens em até 60% e economizando o saldo da sua chave.
             </p>
           </div>
         </div>
@@ -476,6 +480,21 @@ export default function LandingPage() {
 
             {/* Form */}
             <form onSubmit={handleAuthSubmit} className="space-y-4">
+              {/* Name field — only for registration */}
+              {authMode === 'register' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Seu Nome Completo</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Ex: Maria Silva"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-violet"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">E-mail Corporativo</label>
                 <input

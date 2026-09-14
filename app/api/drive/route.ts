@@ -6,10 +6,11 @@ export async function GET(req: Request) {
   const urlObj = new URL(req.url);
   const code = urlObj.searchParams.get('code');
 
-  // Dynamically resolve base URL to support production domain (socialoneapp.com.br)
-  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || urlObj.host;
-  const proto = req.headers.get('x-forwarded-proto') || (urlObj.protocol.includes('https') ? 'https' : 'http');
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`).replace(/\/$/, '');
+  // Dynamically resolve base URL to support production domain, explicitly enforcing socialoneapp.com.br
+  const isLocal = urlObj.host.includes('localhost');
+  const appUrl = isLocal 
+    ? 'http://localhost:3000' 
+    : (process.env.NEXT_PUBLIC_APP_URL || 'https://www.socialoneapp.com.br');
 
   const redirectUriRaw = `${appUrl}/api/drive`;
   const redirectUri = encodeURIComponent(redirectUriRaw);

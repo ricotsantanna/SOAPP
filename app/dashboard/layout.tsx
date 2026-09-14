@@ -9,28 +9,31 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [userEmail, setUserEmail] = useState<string>('checknextip@gmail.com');
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
   const [userPlan, setUserPlan] = useState<string>('max');
   const [userRole, setUserRole] = useState<string>('admin');
 
   useEffect(() => {
-    // 1. Check local storage
+    // 1. Check local storage first (immediate, avoids flash)
     const storedUserStr = localStorage.getItem('socialone_user');
     if (storedUserStr) {
       try {
         const parsed = JSON.parse(storedUserStr);
         if (parsed.email) setUserEmail(parsed.email);
+        if (parsed.name) setUserName(parsed.name);
         if (parsed.plan) setUserPlan(parsed.plan);
         if (parsed.role) setUserRole(parsed.role);
       } catch {}
     }
 
-    // 2. Fetch authenticated session from /api/auth/me
+    // 2. Fetch authenticated session from /api/auth/me (authoritative)
     fetch('/api/auth/me')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.user) {
           setUserEmail(data.user.email);
+          if (data.user.name) setUserName(data.user.name);
           if (data.user.plan) setUserPlan(data.user.plan);
           if (data.user.role) setUserRole(data.user.role);
           localStorage.setItem('socialone_user', JSON.stringify(data.user));
@@ -47,11 +50,14 @@ export default function DashboardLayout({
     window.location.href = '/';
   };
 
-  const getInitials = (email: string) => {
-    if (!email) return 'SO';
-    const parts = email.split('@')[0].split('.');
+  // Display name: prefer actual name, fallback to email prefix
+  const displayName = userName || (userEmail ? userEmail.split('@')[0] : 'Usuário');
+
+  const getInitials = (nameOrEmail: string) => {
+    if (!nameOrEmail) return 'SO';
+    const parts = nameOrEmail.trim().split(/[\s.]+/);
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return email.substring(0, 2).toUpperCase();
+    return nameOrEmail.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -60,8 +66,8 @@ export default function DashboardLayout({
       <header className="h-14 bg-[#070B1B] border-b border-slate-800/80 px-6 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center space-x-3">
           <Link href="/" className="flex items-center space-x-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-violet to-brand-amber flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-              <Bot className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-slate-900 border border-brand-violet/40 flex items-center justify-center p-1 shadow-md group-hover:scale-105 transition-transform">
+              <img src="/logo-icon.png" alt="Social One" className="w-full h-full object-contain" />
             </div>
             <span className="font-extrabold text-lg tracking-tight text-white">Social One</span>
           </Link>
@@ -92,11 +98,11 @@ export default function DashboardLayout({
           </a>
 
           <div className="flex items-center space-x-3 pl-4 border-l border-slate-800">
-            <div className="flex items-center space-x-2 bg-[#111936] border border-slate-800 px-3 py-1 rounded-xl text-xs">
+            <div className="flex items-center space-x-2 bg-[#111936] border border-slate-800 px-3 py-1 rounded-xl text-xs" title={userEmail}>
               <div className="w-5 h-5 rounded-full bg-[#581C87] flex items-center justify-center font-bold text-white text-[9px]">
-                {getInitials(userEmail)}
+                {getInitials(displayName)}
               </div>
-              <span className="text-slate-300 font-medium text-xs hidden md:inline">{userEmail}</span>
+              <span className="text-slate-300 font-medium text-xs hidden md:inline max-w-[120px] truncate">{displayName}</span>
               <span className="text-[9px] uppercase font-black px-1.5 py-0.5 bg-brand-violet/20 text-brand-lavender rounded border border-brand-violet/30 hidden lg:inline">
                 {userPlan}
               </span>

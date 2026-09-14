@@ -4,6 +4,7 @@ import { hashPassword, verifyPassword } from './auth';
 export interface User {
   id: number;
   email: string;
+  name?: string;
   password_hash?: string;
   role?: 'admin' | 'user';
   business_model?: 'service' | 'retail';
@@ -101,6 +102,7 @@ export async function initDb() {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255),
         password_hash TEXT,
         role VARCHAR(20) DEFAULT 'user',
         business_model VARCHAR(50),
@@ -110,6 +112,7 @@ export async function initDb() {
     `;
 
     // Migration helper for existing databases
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255);`.catch(() => {});
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS business_model VARCHAR(50);`.catch(() => {});
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(50) DEFAULT 'start';`.catch(() => {});
 
@@ -263,8 +266,9 @@ export async function authenticateUser(email: string, password: string): Promise
   }
 }
 
-export async function registerUser(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
+export async function registerUser(email: string, password: string, name?: string): Promise<{ success: boolean; user?: User; error?: string }> {
   const cleanEmail = email.toLowerCase().trim();
+  const cleanName = name?.trim() || cleanEmail.split('@')[0];
   const hashedPassword = hashPassword(password);
   const role = cleanEmail.includes('admin') ? 'admin' : 'user';
 
@@ -275,9 +279,9 @@ export async function registerUser(email: string, password: string): Promise<{ s
     }
 
     const res = await sql<User>`
-      INSERT INTO users (email, password_hash, role)
-      VALUES (${cleanEmail}, ${hashedPassword}, ${role})
-      RETURNING id, email, role, created_at;
+      INSERT INTO users (email, name, password_hash, role)
+      VALUES (${cleanEmail}, ${cleanName}, ${hashedPassword}, ${role})
+      RETURNING id, email, name, role, created_at;
     `;
 
     return { success: true, user: res.rows[0] };
@@ -289,6 +293,7 @@ export async function registerUser(email: string, password: string): Promise<{ s
     const newUser: User = {
       id: inMemoryStore.users.length + 1,
       email: cleanEmail,
+      name: cleanName,
       password_hash: hashedPassword,
       role,
       created_at: new Date().toISOString()
@@ -682,10 +687,22 @@ export async function updateUserPlan(userId: number, plan: 'start' | 'agenda' | 
 
 export async function getUserProfile(userId: number): Promise<User | undefined> {
   try {
-    const res = await sql<User>`SELECT id, email, role, business_model, plan, created_at FROM users WHERE id = ${userId};`;
+    const res = await sql<User>`SELECT id, email, name, role, business_model, plan, created_at FROM users WHERE id = ${userId};`;
     return res.rows[0];
   } catch {
     return inMemoryStore.users.find(u => u.id === userId);
+  }
+}
+
+export async function updateUserName(userId: number, name: string): Promise<{ success: boolean }> {
+  const cleanName = name.trim();
+  try {
+    await sql`UPDATE users SET name = ${cleanName} WHERE id = ${userId};`;
+    return { success: true };
+  } catch {
+    const user = inMemoryStore.users.find(u => u.id === userId);
+    if (user) user.name = cleanName;
+    return { success: true };
   }
 }
 

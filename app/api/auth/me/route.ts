@@ -38,6 +38,7 @@ export async function GET(req: Request) {
       user: {
         id: profile.id,
         email: profile.email,
+        name: profile.name || profile.email?.split('@')[0] || '',
         role: profile.role || 'user',
         plan: profile.plan || 'start',
       },
