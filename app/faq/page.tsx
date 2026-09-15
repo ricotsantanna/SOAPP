@@ -45,11 +45,15 @@ const faqData: FaqItem[] = [
   },
   {
     question: "Meus dados e os dados dos meus clientes ficam seguros?",
-    answer: "Seguimos boas práticas de proteção de dados alinhadas à LGPD. A plataforma ainda não possui certificações formais de segurança (como ISO 27001 ou SOC 2). No modelo BYOAI, o processamento de IA ocorre diretamente na conta do provedor (OpenAI ou Google) usando a chave do próprio cliente."
+    answer: "Seguimos os princípios da LGPD nas práticas de tratamento de dados: coleta mínima de informações, política de privacidade clara e possibilidade de exclusão de dados mediante solicitação. A plataforma ainda não passou por certificação formal de terceiros, como ISO/IEC 27701. Sobre sua chave de API (OpenAI/Gemini): ela é criptografada (AES) antes de ser armazenada e não é exibida em nenhuma tela, painel administrativo ou API — nem mesmo a equipe interna tem acesso a ela em texto puro no uso normal da plataforma."
   },
   {
     question: "Funciona para Instagram também, ou só WhatsApp?",
     answer: "O Instagram Direct (mensagens e respostas em comentários) está disponível no plano Social One Full. Os planos Start e Agenda IA cobrem apenas WhatsApp."
+  },
+  {
+    question: "O site usa cookies de rastreamento ou marketing?",
+    answer: "Não. Utilizamos apenas um cookie essencial de sessão, necessário para manter você autenticado no painel. Não usamos Google Analytics, Meta Pixel ou qualquer ferramenta de rastreamento de terceiros no momento."
   }
 ];
 
