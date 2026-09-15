@@ -1,5 +1,13 @@
 import type { Metadata } from 'next';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-plus-jakarta',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.socialoneapp.com.br'),
@@ -35,11 +43,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang="pt-BR" className={`dark ${plusJakartaSans.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className="bg-brand-navy text-slate-100 min-h-screen selection:bg-brand-violet selection:text-white">
+      <body className={`${plusJakartaSans.className} bg-brand-navy text-slate-100 min-h-screen selection:bg-brand-violet selection:text-white`}>
         {children}
       </body>
     </html>
