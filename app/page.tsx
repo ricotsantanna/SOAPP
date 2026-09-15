@@ -83,8 +83,50 @@ export default function LandingPage() {
     }
   };
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Social One',
+    description: 'Atenda clientes 24/7 no WhatsApp com IA, sem taxa por mensagem. Modelo BYOAI: use sua própria chave e tenha controle total de custo.',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    url: 'https://www.socialoneapp.com.br',
+    offers: [
+      {
+        '@type': 'Offer',
+        name: 'Start',
+        price: '99.00',
+        priceCurrency: 'BRL',
+        priceValidUntil: '2026-12-31',
+        availability: 'https://schema.org/InStock',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Agenda IA',
+        price: '149.00',
+        priceCurrency: 'BRL',
+        priceValidUntil: '2026-12-31',
+        availability: 'https://schema.org/InStock',
+      },
+      {
+        '@type': 'Offer',
+        name: 'Social One (Full)',
+        price: '199.00',
+        priceCurrency: 'BRL',
+        priceValidUntil: '2026-12-31',
+        availability: 'https://schema.org/InStock',
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-brand-navy text-slate-100 flex flex-col relative overflow-hidden font-sans">
+      {/* Structured Data JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Ambient Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-radial from-brand-violet/25 via-brand-magenta/10 to-transparent blur-3xl pointer-events-none" />
       <div className="absolute top-1/3 -right-40 w-[500px] h-[500px] bg-brand-magenta/15 rounded-full blur-3xl pointer-events-none" />
