@@ -67,7 +67,7 @@ export default function DashboardLayout({
         <div className="flex items-center space-x-3">
           <Link href="/" className="flex items-center space-x-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-slate-900 border border-brand-violet/40 flex items-center justify-center p-1 shadow-md group-hover:scale-105 transition-transform">
-              <img src="/logo-icon.png" alt="Social One" className="w-full h-full object-contain" />
+              <img src="/logo-icon.png" alt="" aria-hidden="true" className="w-full h-full object-contain" />
             </div>
             <span className="font-extrabold text-lg tracking-tight text-white">Social One</span>
           </Link>

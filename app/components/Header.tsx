@@ -33,7 +33,8 @@ export default function Header({ onOpenAuth }: HeaderProps) {
           <div className="w-10 h-10 rounded-xl overflow-hidden group-hover:scale-105 transition-transform duration-300 flex items-center justify-center bg-slate-900/80 border border-brand-violet/40 p-1.5 shadow-lg shadow-brand-violet/20">
             <img 
               src="/logo-icon.png" 
-              alt="Social One" 
+              alt="" 
+              aria-hidden="true"
               className="w-full h-full object-contain"
             />
           </div>
