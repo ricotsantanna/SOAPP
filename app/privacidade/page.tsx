@@ -106,11 +106,35 @@ export default function PrivacidadePage() {
 
           <div className="w-full h-px bg-slate-800" />
 
-          {/* Section 5 */}
+          {/* Section 5 - Cookies & Analytics */}
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+              <Eye className="w-5 h-5 text-brand-amber shrink-0" />
+              <span>5. Cookies e Ferramentas de Análise (Google Analytics 4)</span>
+            </h2>
+            <p>
+              Utilizamos cookies e tecnologias semelhantes para garantir o funcionamento adequado da plataforma e analisar o tráfego do site:
+            </p>
+            <ul className="list-disc pl-5 space-y-2 text-slate-300">
+              <li>
+                <strong>Cookies Essenciais:</strong> Mantêm sua sessão ativa e segura no painel. Não podem ser desativados pois são necessários para a prestação do serviço.
+              </li>
+              <li>
+                <strong>Google Analytics 4 (GA4):</strong> Utilizado para coletar métricas de uso agregadas e estatísticas anônimas de navegação (páginas visitadas, tempo de permanência). Os scripts do GA4 <strong>somente são ativados após o seu consentimento prévio e explícito</strong> no banner de cookies.
+              </li>
+            </ul>
+            <p>
+              Você pode aceitar ou recusar os cookies não essenciais no banner de consentimento na sua primeira visita. Caso deseje revogar ou alterar sua preferência a qualquer momento, basta limpar os dados de armazenamento do site (localStorage e cookies) nas configurações do seu navegador.
+            </p>
+          </section>
+
+          <div className="w-full h-px bg-slate-800" />
+
+          {/* Section 6 */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-white flex items-center space-x-2">
               <Mail className="w-5 h-5 text-brand-amber shrink-0" />
-              <span>5. Encarregado de Dados (DPO) & Contato</span>
+              <span>6. Encarregado de Dados (DPO) & Contato</span>
             </h2>
             <p>
               Para solicitar alterações, revogação de consentimento ou esclarecer dúvidas sobre esta política, entre em contato com nosso encarregado de privacidade:

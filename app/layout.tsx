@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
+import CookieConsentBanner from './components/CookieConsentBanner';
+import AnalyticsWrapper from './components/AnalyticsWrapper';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -49,6 +51,8 @@ export default function RootLayout({
       </head>
       <body className={`${plusJakartaSans.className} bg-brand-navy text-slate-100 min-h-screen selection:bg-brand-violet selection:text-white`}>
         {children}
+        <CookieConsentBanner />
+        <AnalyticsWrapper />
       </body>
     </html>
   );

@@ -53,7 +53,7 @@ const faqData: FaqItem[] = [
   },
   {
     question: "O site usa cookies de rastreamento ou marketing?",
-    answer: "Não. Utilizamos apenas um cookie essencial de sessão, necessário para manter você autenticado no painel. Não usamos Google Analytics, Meta Pixel ou qualquer ferramenta de rastreamento de terceiros no momento."
+    answer: "Sim. Utilizamos o Google Analytics para entender como os visitantes usam o site (páginas visitadas, tempo de navegação) e assim melhorar a experiência. Esses cookies só são ativados se você aceitar no banner de consentimento — você pode recusar a qualquer momento sem perder acesso a nenhuma funcionalidade do site. Também usamos um cookie essencial de sessão, necessário para manter você autenticado no painel."
   }
 ];
 

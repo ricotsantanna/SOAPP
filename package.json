@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@next/third-parties": "^16.3.5",
     "@vercel/postgres": "^0.10.0",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
