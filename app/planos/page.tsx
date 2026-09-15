@@ -258,7 +258,7 @@ export default function PlanosPage() {
             </div>
           </div>
           <div className="flex items-center space-x-2 shrink-0 text-sky-400 bg-sky-500/10 px-3 py-1.5 rounded-xl border border-sky-500/20 font-semibold text-[11px]">
-            <span>Garantia de 7 dias</span>
+            <span>Garantia de 7 dias — devolução total do valor pago se cancelar nesse período</span>
           </div>
         </div>
       </main>
@@ -273,6 +273,7 @@ export default function PlanosPage() {
           </div>
           <div className="flex items-center space-x-6 flex-wrap justify-center gap-y-2">
             <Link href="/sobre" className="hover:text-brand-amber transition-colors">Sobre a Plataforma</Link>
+            <Link href="/faq" className="hover:text-brand-amber transition-colors">Perguntas Frequentes (FAQ)</Link>
             <Link href="/contato" className="hover:text-brand-amber transition-colors">Contato</Link>
             <Link href="/privacidade" className="hover:text-brand-amber transition-colors">Privacidade</Link>
             <Link href="/termos" className="hover:text-brand-amber transition-colors">Termos de Uso</Link>
