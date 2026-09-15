@@ -18,7 +18,11 @@ import {
   ShieldCheck,
   Menu,
   X,
-  Zap
+  Zap,
+  Clock,
+  DollarSign,
+  MessageSquareOff,
+  LayoutGrid
 } from 'lucide-react';
 
 import CheckoutMercadoPagoModal from './dashboard/CheckoutMercadoPagoModal';
@@ -90,7 +94,7 @@ export default function LandingPage() {
       <Header onOpenAuth={(mode) => { setAuthMode(mode); setShowAuthModal(true); }} />
 
       {/* Hero Section */}
-      <section id="recursos" className="relative pt-20 pb-24 px-6 max-w-7xl mx-auto text-center flex flex-col items-center justify-center">
+      <section id="recursos" className="relative pt-20 pb-20 px-6 max-w-7xl mx-auto text-center flex flex-col items-center justify-center">
         <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-brand-violet/20 border border-brand-violet/40 text-brand-lavender text-xs font-semibold mb-8 animate-pulse">
           <Sparkles className="w-4 h-4 text-brand-amber" />
           <span>Plataforma Autêntica de IA Corporativa com BYOAI</span>
@@ -103,9 +107,128 @@ export default function LandingPage() {
           </span>
         </h1>
 
-        <p className="text-lg sm:text-xl text-slate-300 max-w-3xl mb-12 leading-relaxed">
+        <p className="text-lg sm:text-xl text-slate-300 max-w-3xl mb-8 leading-relaxed">
           Descomplique a automação corporativa e o atendimento ao cliente, transformando canais de mensagens em centrais inteligentes movidas a inteligência artificial — com autonomia total de custos no modelo <strong className="text-brand-amber">Bring Your Own AI (BYOAI)</strong>.
         </p>
+
+        {/* Hero CTAs */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+          <a
+            href="#planos"
+            className="w-full sm:w-auto bg-brand-amber text-slate-950 font-extrabold px-8 py-4 rounded-xl hover:bg-yellow-400 transition-all shadow-lg shadow-brand-amber/20 flex items-center justify-center space-x-2 text-sm transform hover:scale-105"
+          >
+            <span>Começar agora</span>
+            <ArrowRight className="w-4 h-4" />
+          </a>
+          <a
+            href="#tecnologia"
+            className="w-full sm:w-auto border border-brand-violet/40 bg-brand-violet/10 text-brand-lavender hover:bg-brand-violet/20 font-bold px-8 py-4 rounded-xl transition-all flex items-center justify-center space-x-2 text-sm"
+          >
+            <span>Ver como funciona</span>
+            <ChevronRight className="w-4 h-4 text-brand-amber" />
+          </a>
+        </div>
+      </section>
+
+      {/* Seção Dor -> Solução */}
+      <section className="relative py-20 px-6 max-w-7xl mx-auto w-full text-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-radial from-brand-violet/25 via-brand-magenta/10 to-transparent blur-3xl pointer-events-none" />
+
+        <h2 className="text-3xl sm:text-5xl font-extrabold text-white mb-4 tracking-tight">
+          Você reconhece algum{" "}
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-violet via-brand-magenta to-brand-amber">
+            desses problemas?
+          </span>
+        </h2>
+        <p className="text-slate-400 max-w-2xl mx-auto text-sm sm:text-base mb-16 leading-relaxed">
+          O Social One foi construído para resolver exatamente isso.
+        </p>
+
+        {/* 5 Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl mx-auto text-left">
+          {/* Card 1 */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-brand-violet/20 border border-brand-violet/40 flex items-center justify-center mb-4">
+                <Clock className="w-6 h-6 text-brand-amber" />
+              </div>
+              <h3 className="text-base font-bold text-brand-amber mb-3 leading-snug">
+                "Perco venda porque não consigo responder todo mundo a tempo."
+              </h3>
+            </div>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              Atendimento automático 24/7 que responde na hora, inclusive de madrugada e fim de semana.
+            </p>
+          </div>
+
+          {/* Card 2 */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-brand-magenta/20 border border-brand-magenta/40 flex items-center justify-center mb-4">
+                <DollarSign className="w-6 h-6 text-brand-lavender" />
+              </div>
+              <h3 className="text-base font-bold text-brand-amber mb-3 leading-snug">
+                "Pago caro em ferramentas que cobram por mensagem enviada."
+              </h3>
+            </div>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              Com o modelo BYOAI você usa sua própria chave de IA. Sem taxa por mensagem, custo previsível e no seu controle.
+            </p>
+          </div>
+
+          {/* Card 3 */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-brand-amber/20 border border-brand-amber/40 flex items-center justify-center mb-4">
+                <MessageSquareOff className="w-6 h-6 text-brand-amber" />
+              </div>
+              <h3 className="text-base font-bold text-brand-amber mb-3 leading-snug">
+                "Minha equipe repete as mesmas respostas o dia inteiro."
+              </h3>
+            </div>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              A IA aprende com seus PDFs e documentos e responde sozinha sobre produtos, preços e procedimentos.
+            </p>
+          </div>
+
+          {/* Card 4 */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-brand-violet/20 border border-brand-violet/40 flex items-center justify-center mb-4">
+                <LayoutGrid className="w-6 h-6 text-brand-lavender" />
+              </div>
+              <h3 className="text-base font-bold text-brand-amber mb-3 leading-snug">
+                "Vivo alternando entre WhatsApp, Instagram e agenda."
+              </h3>
+            </div>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              Tudo em um painel só — conversas, agendamento e redes sociais centralizados.
+            </p>
+          </div>
+
+          {/* Card 5 */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-brand-magenta/20 border border-brand-magenta/40 flex items-center justify-center mb-4">
+                <Bot className="w-6 h-6 text-brand-amber" />
+              </div>
+              <h3 className="text-base font-bold text-brand-amber mb-3 leading-snug">
+                "Já testei chatbot e o cliente percebe que é robô."
+              </h3>
+            </div>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              Atendimento humanizado, e você assume a conversa a qualquer momento com o Human Handoff.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Seção de Cards Técnicos (BYOAI / WhatsApp / RAG) */}
+      <section id="tecnologia" className="relative py-20 px-6 max-w-7xl mx-auto text-center flex flex-col items-center justify-center">
+        <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-brand-violet/20 border border-brand-violet/40 text-brand-lavender text-xs font-semibold mb-8">
+          <Sparkles className="w-4 h-4 text-brand-amber" />
+          <span>Tecnologia de Ponta para Resolver Suas Dores</span>
+        </div>
 
         {/* Feature Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl text-left">
@@ -113,6 +236,9 @@ export default function LandingPage() {
             <div className="w-12 h-12 rounded-xl bg-brand-violet/20 border border-brand-violet/40 flex items-center justify-center mb-4">
               <Key className="w-6 h-6 text-brand-amber" />
             </div>
+            <span className="font-bold text-brand-lavender block mb-2 text-sm">
+              Seu custo de IA sob controle
+            </span>
             <h3 className="text-lg font-bold text-white mb-2">Arquitetura BYOAI</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
               Use sua própria chave OpenAI ou Google Gemini. Zero taxa sobre inferência e controle financeiro absoluto.
@@ -123,6 +249,9 @@ export default function LandingPage() {
             <div className="w-12 h-12 rounded-xl bg-brand-magenta/20 border border-brand-magenta/40 flex items-center justify-center mb-4">
               <MessageSquare className="w-6 h-6 text-brand-lavender" />
             </div>
+            <span className="font-bold text-brand-lavender block mb-2 text-sm">
+              Resposta instantânea, sem perder cliente
+            </span>
             <h3 className="text-lg font-bold text-white mb-2">WhatsApp Evolution API</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
               Conexão instantânea via QR Code em segundos. Atendimento humanizado 24/7 na sua conta WhatsApp Business.
@@ -133,6 +262,9 @@ export default function LandingPage() {
             <div className="w-12 h-12 rounded-xl bg-brand-amber/20 border border-brand-amber/40 flex items-center justify-center mb-4">
               <FileText className="w-6 h-6 text-brand-amber" />
             </div>
+            <span className="font-bold text-brand-lavender block mb-2 text-sm">
+              Sua equipe não repete respostas de novo
+            </span>
             <h3 className="text-lg font-bold text-white mb-2">RAG Base de Conhecimento</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
               Injete PDFs e Google Drive. Os documentos são <strong className="text-brand-lavender">convertidos para Markdown</strong> automaticamente, reduzindo o consumo de tokens em até 60% e economizando o saldo da sua chave.
